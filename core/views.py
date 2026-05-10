@@ -10,16 +10,16 @@ from datetime import timedelta
 from .models import (
     Child, Task, TaskRecord, Encouragement, Teacher, ClassStudent, Activity,
     FoodMaterial, MealRecord, MealFoodItem, Badge, ChildBadge, Recipe,
-    HealthChallenge, ChallengeProgress
+    HealthChallenge, ChallengeProgress, School
 )
 
 
 def is_parent(user):
-    return user.is_authenticated and hasattr(user, 'children')
+    return user.is_authenticated and user.children.exists()
 
 
 def is_teacher(user):
-    return user.is_authenticated and hasattr(user, 'teacher_profile')
+    return user.is_authenticated and Teacher.objects.filter(user=user).exists()
 
 
 # ========== 公共视图 ==========
@@ -31,22 +31,49 @@ def index(request):
 
 def user_login(request):
     """登录视图"""
+    role_names = {'parent': '家长登录', 'teacher': '教师登录', 'child': '儿童登录'}
+    selected_role = request.GET.get('role', '')
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        role = request.POST.get('role', '')
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
-            if hasattr(user, 'teacher_profile'):
+            # 优先使用表单中提交的角色
+            if role == 'teacher':
                 return redirect('school_dashboard')
-            elif user.children.exists():
+            elif role == 'parent':
                 return redirect('parent_dashboard')
-            elif Child.objects.filter(parent=user).exists():
-                return redirect('child_dashboard')
+            elif role == 'child':
+                # 检查是否是与儿童账户关联的用户
+                # 儿童账户有user字段指向登录的用户，parent字段指向关联的家长
+                child_account = Child.objects.filter(user=user).first()
+                if child_account:
+                    return redirect('child_dashboard')
+                else:
+                    logout(request)
+                    return render(request, 'registration/login.html', {
+                        'error': '此账户不是儿童账户，请选择正确的身份登录',
+                        'selected_role': '',
+                        'role_names': role_names
+                    })
             else:
-                return redirect('register_child')
-        return render(request, 'registration/login.html', {'error': '用户名或密码错误'})
-    return render(request, 'registration/login.html')
+                if Teacher.objects.filter(user=user).exists():
+                    return redirect('school_dashboard')
+                elif user.children.exists():
+                    return redirect('parent_dashboard')
+                elif hasattr(user, 'child_profile'):
+                    return redirect('child_dashboard')
+                else:
+                    return render(request, 'registration/login.html', {
+                        'error': '账户类型不明确，请重新选择身份登录',
+                        'selected_role': '',
+                        'role_names': role_names
+                    })
+        return render(request, 'registration/login.html', {'error': '用户名或密码错误', 'selected_role': role, 'role_names': role_names})
+    return render(request, 'registration/login.html', {'selected_role': selected_role, 'role_names': role_names})
 
 
 def user_register(request):
@@ -71,7 +98,8 @@ def user_register(request):
                 name=request.POST.get('child_name', ''),
                 nickname=request.POST.get('nickname', username),
                 gender=request.POST.get('gender', 'M'),
-                parent=user
+                user=user,
+                parent=None  # 暂时不关联家长，等家长绑定
             )
             bind_code = child.generate_bind_code()
             for code, name in Task.TASK_TYPES:
@@ -85,17 +113,26 @@ def user_register(request):
             })
 
         elif role == 'parent':
-            bind_code = request.POST.get('bind_code', '').strip().upper()
-            if bind_code:
-                try:
-                    child = Child.objects.get(bind_code=bind_code)
-                    child.parent = user
-                    child.save()
-                except Child.DoesNotExist:
-                    pass
+            # 家长注册不再自动绑定儿童
+            # 家长登录后可在家长端通过绑定码功能绑定儿童
             return redirect('login')
 
         elif role == 'teacher':
+            school_name = request.POST.get('school_name', '').strip()
+            class_name = request.POST.get('class_name', '').strip()
+
+            if not school_name or not class_name:
+                return render(request, 'registration/register.html', {
+                    'error': '学校名称和班级名称不能为空',
+                    'role': role
+                })
+
+            school, _ = School.objects.get_or_create(name=school_name)
+            Teacher.objects.create(
+                user=user,
+                school=school,
+                class_name=class_name
+            )
             return redirect('login')
 
         return redirect('login')
@@ -115,9 +152,20 @@ def user_logout(request):
 @login_required
 def child_dashboard(request):
     """儿童端首页"""
-    child = Child.objects.filter(parent=request.user).first()
+    child = Child.objects.filter(user=request.user).first()
     if not child:
-        return redirect('register_child')
+        return render(request, 'child/dashboard.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+            'today': timezone.now().date(),
+            'daily_records': [],
+            'encouragements': [],
+            'latest_encouragement': None,
+            'progress_percent': 0,
+            'today_meals': [],
+            'badges': [],
+            'active_challenges': []
+        })
 
     today = timezone.now().date()
     tasks = Task.objects.all()
@@ -175,7 +223,7 @@ def child_dashboard(request):
 @require_http_methods(["POST"])
 def child_submit_task(request, task_id):
     """儿童提交任务申请"""
-    child = Child.objects.filter(parent=request.user).first()
+    child = Child.objects.filter(user=request.user).first()
     if not child:
         return JsonResponse({'success': False, 'message': '未找到孩子信息'})
 
@@ -281,7 +329,7 @@ def yolo_recognize_food(request):
     前端上传图片，后端调用 YOLO 模型进行识别
     识别完成后返回食材列表和营养分析
     """
-    child = Child.objects.filter(parent=request.user).first()
+    child = Child.objects.filter(user=request.user).first()
     if not child:
         return JsonResponse({'success': False, 'message': '未找到孩子信息'})
 
@@ -496,7 +544,7 @@ def yolo_recognize_food(request):
 @login_required
 def child_meal_history(request):
     """儿童膳食历史"""
-    child = Child.objects.filter(parent=request.user).first()
+    child = Child.objects.filter(user=request.user).first()
     if not child:
         return JsonResponse({'success': False, 'message': '未找到孩子信息'})
 
@@ -523,7 +571,7 @@ def child_meal_history(request):
 @login_required
 def child_badges(request):
     """儿童徽章墙"""
-    child = Child.objects.filter(parent=request.user).first()
+    child = Child.objects.filter(user=request.user).first()
     if not child:
         return JsonResponse({'success': False, 'message': '未找到孩子信息'})
 
@@ -538,6 +586,26 @@ def child_badges(request):
                     'description': b.description, 'requirement': b.requirement}
                    for b in all_badges if b not in [eb.badge for eb in earned]]
     })
+
+
+@login_required
+def child_update_avatar(request):
+    """更新儿童头像"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': '仅支持POST请求'})
+
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return JsonResponse({'success': False, 'message': '未找到孩子信息'})
+
+    avatar = request.POST.get('avatar', '')
+    if avatar not in ['default', 'warrior', 'princess', 'robot', 'unicorn', 'dragon', 'star', 'moon']:
+        return JsonResponse({'success': False, 'message': '无效的头像选项'})
+
+    child.avatar = avatar
+    child.save()
+
+    return JsonResponse({'success': True, 'message': '头像已更新'})
 
 
 # ========== 家长端视图 ==========
@@ -562,7 +630,8 @@ def parent_dashboard(request):
     """家长端首页"""
     children = Child.objects.filter(parent=request.user)
     if not children.exists():
-        return redirect('register_child')
+        # 没有关联儿童，显示绑定儿童页面
+        return render(request, 'parent/bind_child.html')
 
     selected_id = request.session.get('selected_child_id')
     if selected_id:
@@ -860,6 +929,76 @@ def parent_meal_report(request):
     })
 
 
+@login_required
+def parent_get_teachers(request):
+    """获取所有教师列表"""
+    teachers = Teacher.objects.all().select_related('school')
+    return JsonResponse({
+        'success': True,
+        'teachers': [{
+            'id': t.id,
+            'name': t.user.username,
+            'school': t.school.name,
+            'class_name': t.class_name
+        } for t in teachers]
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def parent_add_to_class(request):
+    """家长将孩子添加到班级"""
+    child_id = request.POST.get('child_id')
+    teacher_id = request.POST.get('teacher_id')
+
+    if not child_id or not teacher_id:
+        return JsonResponse({'success': False, 'message': '参数不完整'})
+
+    children = Child.objects.filter(parent=request.user)
+    try:
+        child = children.get(id=int(child_id))
+    except Child.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '未找到孩子'})
+
+    try:
+        teacher = Teacher.objects.get(id=int(teacher_id))
+    except Teacher.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '未找到教师'})
+
+    # 检查是否已存在关联
+    if ClassStudent.objects.filter(teacher=teacher, child=child).exists():
+        return JsonResponse({'success': False, 'message': '孩子已在该班级中'})
+
+    ClassStudent.objects.create(teacher=teacher, child=child)
+    return JsonResponse({'success': True, 'message': '已成功添加到班级'})
+
+
+def parent_bind_child(request):
+    """家长通过绑定码关联儿童"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': '仅支持POST请求'})
+
+    bind_code = request.POST.get('bind_code', '').strip().upper()
+
+    if not bind_code:
+        return JsonResponse({'success': False, 'message': '请输入绑定码'})
+
+    try:
+        child = Child.objects.get(bind_code=bind_code)
+    except Child.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '绑定码无效'})
+
+    # 检查是否已被其他家长绑定
+    if child.parent is not None:
+        return JsonResponse({'success': False, 'message': '该儿童已被其他家长绑定'})
+
+    # 绑定儿童
+    child.parent = request.user
+    child.save()
+
+    return JsonResponse({'success': True, 'message': f'成功绑定儿童 {child.nickname}！'})
+
+
 # ========== 学校端视图 ==========
 
 @login_required
@@ -891,7 +1030,7 @@ def school_dashboard(request):
 
         students_data.append({
             'id': child.id,
-            'nickname': child.nickname[:1] + '*',
+            'nickname': child.nickname,
             'level': child.level,
             'week_tasks': week_records.count(),
             'avg_tasks': round(avg_tasks, 1),
@@ -909,7 +1048,7 @@ def school_dashboard(request):
         if pending > 0:
             all_pending.append({
                 'child_id': child.id,
-                'child_nickname': child.nickname[:1] + '*',
+                'child_nickname': child.nickname,
                 'pending_count': pending
             })
 

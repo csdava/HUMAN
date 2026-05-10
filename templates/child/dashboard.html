@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}小勇士 - 儿童端{% endblock %}
+{% block title %}童视智圈 - 儿童端{% endblock %}
+
+{% block header %}
+<header class="header" style="display: none;"></header>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -9,7 +13,6 @@
         max-width: 900px;
         margin: 0 auto;
         padding: 20px;
-        background: #f5f5f5;
         min-height: 100vh;
     }
 
@@ -18,7 +21,7 @@
         color: white;
         padding: 30px;
         border-radius: 16px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         display: flex;
         align-items: center;
         gap: 30px;
@@ -52,10 +55,13 @@
         background: white;
         border-radius: 16px;
         padding: 30px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         display: flex;
         gap: 30px;
         align-items: center;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .warrior-avatar {
@@ -68,6 +74,36 @@
         align-items: center;
         font-size: 70px;
         box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .warrior-avatar .icon {
+        color: white;
+        position: relative;
+        z-index: 1;
+    }
+
+    .avatar-hover-plus {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 50px;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .warrior-avatar:hover .avatar-hover-plus {
+        opacity: 1;
     }
 
     .warrior-stats {
@@ -186,6 +222,9 @@
         border-radius: 16px;
         padding: 30px;
         margin-bottom: 20px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .section-title {
@@ -289,6 +328,9 @@
         border-radius: 16px;
         padding: 30px;
         margin-bottom: 20px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .meal-upload {
@@ -795,6 +837,13 @@
 
 {% block content %}
 <div class="child-container">
+    {% if error %}
+    <div style="text-align: center; padding: 60px 20px;">
+        <h2 style="color: #e65100; margin-bottom: 20px;">{{ error }}</h2>
+        <p style="color: #666; margin-bottom: 30px;">您的账户没有关联的儿童信息</p>
+        <a href="{% url 'logout' %}" style="color: #667eea;">退出登录</a>
+    </div>
+    {% else %}
     <div class="page-header">
         <div class="child-info">
             <div class="child-name">{{ child.nickname }}</div>
@@ -806,18 +855,35 @@
     </div>
 
     <div class="warrior-card">
-        <div class="warrior-avatar">
-            {% if child.level >= 5 %}
-                <span class="icon icon-crown"></span>
-            {% elif child.level >= 4 %}
-                <span class="icon icon-shield"></span>
-            {% elif child.level >= 3 %}
-                <span class="icon icon-arrow-up"></span>
-            {% elif child.level >= 2 %}
+        <div class="warrior-avatar" onclick="openAvatarModal()"
+            {% if child.avatar == 'warrior' %}style="background: linear-gradient(135deg, #f44336, #ef5350);"
+            {% elif child.avatar == 'princess' %}style="background: linear-gradient(135deg, #e91e63, #f48fb1);"
+            {% elif child.avatar == 'robot' %}style="background: linear-gradient(135deg, #607d8b, #90a4ae);"
+            {% elif child.avatar == 'unicorn' %}style="background: linear-gradient(135deg, #9c27b0, #ba68c8);"
+            {% elif child.avatar == 'dragon' %}style="background: linear-gradient(135deg, #ff5722, #ff8a65);"
+            {% elif child.avatar == 'star' %}style="background: linear-gradient(135deg, #ffc107, #ffca28);"
+            {% elif child.avatar == 'moon' %}style="background: linear-gradient(135deg, #3f51b5, #7986cb);"
+            {% endif %}>
+            {% if child.avatar == 'default' %}
+                <span class="icon icon-user"></span>
+            {% elif child.avatar == 'warrior' %}
                 <span class="icon icon-star"></span>
+            {% elif child.avatar == 'princess' %}
+                <span class="icon icon-heart"></span>
+            {% elif child.avatar == 'robot' %}
+                <span class="icon icon-shield"></span>
+            {% elif child.avatar == 'unicorn' %}
+                <span class="icon icon-star-empty"></span>
+            {% elif child.avatar == 'dragon' %}
+                <span class="icon icon-flame"></span>
+            {% elif child.avatar == 'star' %}
+                <span class="icon icon-crown"></span>
+            {% elif child.avatar == 'moon' %}
+                <span class="icon icon-moon"></span>
             {% else %}
-                <span class="icon icon-plus-circle"></span>
+                <span class="icon icon-user"></span>
             {% endif %}
+            <span class="avatar-hover-plus">+</span>
         </div>
 
         <div class="warrior-stats">
@@ -1042,10 +1108,103 @@
 
 <div id="toast" class="toast" style="display: none;"></div>
 
+<!-- 头像选择Modal -->
+<div id="avatarModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; justify-content: center; align-items: center;">
+    <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center;">
+        <h3 style="color: #333; margin-bottom: 20px;">选择头像</h3>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+            <div class="avatar-option" data-avatar="default" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4CAF50, #81C784); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-user"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="warrior" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f44336, #ef5350); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-star"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="princess" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #e91e63, #f48fb1); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-heart"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="robot" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #607d8b, #90a4ae); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-shield"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="unicorn" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #9c27b0, #ba68c8); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-star-empty"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="dragon" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff5722, #ff8a65); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-flame"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="star" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ffc107, #ffca28); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-crown"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="moon" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #3f51b5, #7986cb); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-moon"></span>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button onclick="closeAvatarModal()" style="padding: 10px 30px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer;">取消</button>
+            <button onclick="confirmAvatar()" style="padding: 10px 30px; border: none; border-radius: 8px; background: #4CAF50; color: white; cursor: pointer;">确认</button>
+        </div>
+    </div>
+</div>
+
 <script>
 let mediaStream = null;
 let currentImageFile = null;
+let selectedAvatar = '';
 
+function openAvatarModal() {
+    document.getElementById('avatarModal').style.display = 'flex';
+    selectedAvatar = '{{ child.avatar }}';
+    document.querySelectorAll('.avatar-option').forEach(opt => {
+        opt.querySelector('div').style.borderColor = opt.dataset.avatar === selectedAvatar ? '#4CAF50' : 'transparent';
+    });
+}
+
+function closeAvatarModal() {
+    document.getElementById('avatarModal').style.display = 'none';
+}
+
+function selectAvatar(el) {
+    document.querySelectorAll('.avatar-option div').forEach(div => div.style.borderColor = 'transparent');
+    el.querySelector('div').style.borderColor = '#4CAF50';
+    selectedAvatar = el.dataset.avatar;
+}
+
+function confirmAvatar() {
+    if (!selectedAvatar) {
+        showToast('请选择头像');
+        return;
+    }
+    fetch('/child/update-avatar/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `avatar=${selectedAvatar}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message);
+        if (data.success) {
+            setTimeout(() => location.reload(), 1000);
+        }
+    });
+    closeAvatarModal();
+}
+
+// 头像点击事件
 function showToast(message) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -1272,4 +1431,5 @@ function getCookie(name) {
     return cookieValue;
 }
 </script>
+{% endif %}
 {% endblock %}

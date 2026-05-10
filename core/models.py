@@ -16,6 +16,7 @@ class Child(models.Model):
     level = models.IntegerField(default=1, verbose_name='勇士等级')
     power = models.IntegerField(default=0, verbose_name='当前体力值')
     power_to_next = models.IntegerField(default=40, verbose_name='升级所需体力')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='child_profile', verbose_name='关联用户')
     parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='children', null=True, blank=True, verbose_name='关联家长')
     bind_code = models.CharField(max_length=20, unique=True, null=True, blank=True, verbose_name='绑定码')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')

@@ -520,6 +520,34 @@
         </div>
         {% endif %}
     </div>
+
+    <div class="section">
+        <h2 class="section-title">绑定儿童</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 15px;">输入儿童端提供的绑定码，将孩子绑定到您的账户</p>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="bindCodeInput" placeholder="请输入6位绑定码" maxlength="6" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-transform: uppercase;">
+            <button class="btn-add" onclick="bindChild()">绑定</button>
+        </div>
+        <div id="bindStatus" style="margin-top: 15px; font-size: 13px; color: #666;"></div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">添加班级</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 15px;">将孩子添加到学校班级，与其他孩子一起参与健康挑战</p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="childSelect" style="flex: 1; min-width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <option value="">选择孩子</option>
+                {% for c in children %}
+                <option value="{{ c.id }}">{{ c.nickname }}</option>
+                {% endfor %}
+            </select>
+            <select id="teacherSelect" style="flex: 2; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <option value="">选择教师/班级</option>
+            </select>
+            <button class="btn-add" onclick="addToClass()">添加</button>
+        </div>
+        <div id="classStatus" style="margin-top: 15px; font-size: 13px; color: #666;"></div>
+    </div>
 </div>
 
 <form method="POST" action="{% url 'parent_switch_child' %}" id="switchChildForm">
@@ -631,6 +659,75 @@ function loadRecipes() {
         }
     });
 }
+
+// 加载教师列表
+function loadTeachers() {
+    fetch('/parent/get-teachers/')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.teachers.length > 0) {
+            let html = '<option value="">选择教师/班级</option>';
+            data.teachers.forEach(t => {
+                html += `<option value="${t.id}">${t.name} - ${t.school.name} - ${t.class_name}</option>`;
+            });
+            document.getElementById('teacherSelect').innerHTML = html;
+        }
+    });
+}
+
+function bindChild() {
+    const bindCode = document.getElementById('bindCodeInput').value.trim().toUpperCase();
+    if (!bindCode) {
+        showToast('请输入绑定码');
+        return;
+    }
+    if (bindCode.length !== 6) {
+        showToast('绑定码必须是6位');
+        return;
+    }
+    fetch('/parent/bind-child/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `bind_code=${encodeURIComponent(bindCode)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message);
+        if (data.success) {
+            document.getElementById('bindStatus').innerHTML = '<span style="color: #4CAF50;">绑定成功！</span>';
+            document.getElementById('bindCodeInput').value = '';
+            // 刷新页面以显示新绑定的儿童
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            document.getElementById('bindStatus').innerHTML = '<span style="color: #f44336;">' + data.message + '</span>';
+        }
+    });
+}
+
+// 添加到班级
+function addToClass() {
+    const childId = document.getElementById('childSelect').value;
+    const teacherId = document.getElementById('teacherSelect').value;
+    if (!childId || !teacherId) {
+        showToast('请选择孩子和教师');
+        return;
+    }
+    fetch('/parent/add-to-class/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `child_id=${childId}&teacher_id=${teacherId}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message);
+        if (data.success) {
+            document.getElementById('classStatus').innerHTML = '<span style="color: #4CAF50;">添加成功！孩子已加入班级。</span>';
+        }
+    });
+}
+
+// 页面加载时获取教师列表
+document.addEventListener('DOMContentLoaded', loadTeachers);
 
 function getCookie(name) {
     let cookieValue = null;

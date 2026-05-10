@@ -16,6 +16,7 @@ urlpatterns = [
     path('child/encouragement/<int:encouragement_id>/read/', views.child_mark_encouragement_read, name='child_mark_encouragement_read'),
     path('child/meal-history/', views.child_meal_history, name='child_meal_history'),
     path('child/badges/', views.child_badges, name='child_badges'),
+    path('child/update-avatar/', views.child_update_avatar, name='child_update_avatar'),
 
     # YOLO 膳食识别 API (预留接口)
     path('api/yolo/recognize/', views.yolo_recognize_food, name='yolo_recognize_food'),
@@ -29,6 +30,9 @@ urlpatterns = [
     path('parent/correct-meal/<int:meal_id>/', views.parent_correct_meal, name='parent_correct_meal'),
     path('parent/recipes/', views.parent_recipes, name='parent_recipes'),
     path('parent/meal-report/', views.parent_meal_report, name='parent_meal_report'),
+    path('parent/add-to-class/', views.parent_add_to_class, name='parent_add_to_class'),
+    path('parent/get-teachers/', views.parent_get_teachers, name='parent_get_teachers'),
+    path('parent/bind-child/', views.parent_bind_child, name='parent_bind_child'),
 
     # 学校端
     path('school/', views.school_dashboard, name='school_dashboard'),
