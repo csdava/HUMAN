@@ -924,6 +924,16 @@
         </div>
     </div>
 
+    <!-- 健康数据区域 -->
+    <div class="health-section" style="background: white; border-radius: 16px; padding: 30px; margin-bottom: 15px; max-width: 800px; margin-left: auto; margin-right: auto;">
+        <h2 class="section-title">手环健康数据</h2>
+        <div id="healthDataSection">
+            <div class="empty-state" style="padding: 20px;">
+                <p style="color: #999;">正在加载健康数据...</p>
+            </div>
+        </div>
+    </div>
+
     <div class="meal-section">
         <h2 class="section-title">AI 膳食识别</h2>
         <div class="meal-upload" onclick="openMealModal()">
@@ -1415,6 +1425,90 @@ function displayResults(data) {
         document.getElementById('fatValue').textContent = data.nutrition.fat;
     }
 }
+
+// 健康数据相关
+let healthRefreshInterval = null;
+
+function loadHealthData() {
+    fetch('/api/health/today/')
+    .then(r => r.json())
+    .then(data => {
+        const section = document.getElementById('healthDataSection');
+        if (data.success && data.data) {
+            const d = data.data;
+            section.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div class="stat-box">
+                        <div class="stat-value" style="font-size: 32px;">${d.steps}</div>
+                        <div class="stat-label">步数</div>
+                        <div style="font-size: 12px; color: ${d.step_percent >= 100 ? '#4CAF50' : '#999'}; margin-top: 5px;">目标: ${d.step_goal} (${d.step_percent}%)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #e91e63;">${d.heart_rate_avg || '--'}</div>
+                        <div class="stat-label">平均心率</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 5px;">${d.heart_rate_min || '--'}-${d.heart_rate_max || '--'} bpm</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #9C27B0;">${Math.floor((d.sleep_duration_minutes || 0) / 60)}h${(d.sleep_duration_minutes || 0) % 60}m</div>
+                        <div class="stat-label">睡眠时长</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 5px;">深睡${Math.floor((d.deep_sleep_minutes || 0) / 60)}h${(d.deep_sleep_minutes || 0) % 60}m</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #4CAF50;">🏃 ${d.active_minutes || 0}分钟</div>
+                        <div style="font-size: 12px; color: #666;">活动</div>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #FF9800;">🔥 ${d.calories_burned || 0} kcal</div>
+                        <div style="font-size: 12px; color: #666;">消耗</div>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #2196F3;">😴 ${Math.floor((d.light_sleep_minutes || 0) / 60)}h${(d.light_sleep_minutes || 0) % 60}m</div>
+                        <div style="font-size: 12px; color: #666;">浅睡</div>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #9C27B0;">🌙 ${Math.floor((d.rem_sleep_minutes || 0) / 60)}h${(d.rem_sleep_minutes || 0) % 60}m</div>
+                        <div style="font-size: 12px; color: #666;">REM</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #999;">
+                    最后同步: ${d.last_sync ? new Date(d.last_sync).toLocaleTimeString() : '未知'}
+                    <button onclick="loadHealthData()" style="margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #f0f0f0; border: none; border-radius: 4px; cursor: pointer;">刷新</button>
+                </div>
+            `;
+        } else {
+            section.innerHTML = `
+                <div class="empty-state" style="padding: 20px;">
+                    <div style="font-size: 36px; margin-bottom: 10px;">⌚</div>
+                    <p style="color: #999;">暂无手环数据</p>
+                    <p style="font-size: 12px; color: #ccc; margin-top: 5px;">请在手机App中同步手环数据</p>
+                </div>
+            `;
+        }
+    })
+    .catch(err => {
+        document.getElementById('healthDataSection').innerHTML = `
+            <div class="empty-state" style="padding: 20px;">
+                <p style="color: #f44336;">加载失败</p>
+            </div>
+        `;
+    });
+}
+
+// 页面加载时获取健康数据
+document.addEventListener('DOMContentLoaded', function() {
+    loadHealthData();
+    // 每30秒自动刷新健康数据
+    healthRefreshInterval = setInterval(loadHealthData, 30000);
+});
+
+// 页面离开时清除定时器
+window.addEventListener('beforeunload', function() {
+    if (healthRefreshInterval) {
+        clearInterval(healthRefreshInterval);
+    }
+});
 
 function getCookie(name) {
     let cookieValue = null;

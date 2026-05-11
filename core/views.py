@@ -10,7 +10,7 @@ from datetime import timedelta
 from .models import (
     Child, Task, TaskRecord, Encouragement, Teacher, ClassStudent, Activity,
     FoodMaterial, MealRecord, MealFoodItem, Badge, ChildBadge, Recipe,
-    HealthChallenge, ChallengeProgress, School
+    HealthChallenge, ChallengeProgress, School, HealthData
 )
 
 
@@ -997,6 +997,207 @@ def parent_bind_child(request):
     child.save()
 
     return JsonResponse({'success': True, 'message': f'成功绑定儿童 {child.nickname}！'})
+
+
+# ========== 健康数据 API（供Android App调用）==========
+@login_required
+@require_http_methods(["POST"])
+def health_sync(request):
+    """接收Android App推送的手环健康数据"""
+    try:
+        import json
+        data = json.loads(request.body)
+
+        child_id = data.get('child_id')
+        if not child_id:
+            return JsonResponse({'success': False, 'message': '缺少child_id'})
+
+        children = Child.objects.filter(parent=request.user)
+        if not children.filter(id=child_id).exists():
+            return JsonResponse({'success': False, 'message': '无权访问该儿童数据'})
+
+        child = children.get(id=child_id)
+
+        date_str = data.get('date')
+        if not date_str:
+            return JsonResponse({'success': False, 'message': '缺少date字段'})
+
+        from datetime import datetime
+        date = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+        # 创建或更新健康数据
+        health_data, created = HealthData.objects.get_or_create(
+            child=child,
+            date=date,
+            defaults={
+                'steps': data.get('steps', 0),
+                'step_goal': data.get('step_goal', 8000),
+                'active_minutes': data.get('active_minutes', 0),
+                'calories_burned': data.get('calories_burned', 0),
+                'heart_rate_avg': data.get('heart_rate_avg', 0),
+                'heart_rate_max': data.get('heart_rate_max', 0),
+                'heart_rate_min': data.get('heart_rate_min', 0),
+                'sleep_duration_minutes': data.get('sleep_duration_minutes', 0),
+                'deep_sleep_minutes': data.get('deep_sleep_minutes', 0),
+                'light_sleep_minutes': data.get('light_sleep_minutes', 0),
+                'rem_sleep_minutes': data.get('rem_sleep_minutes', 0),
+            }
+        )
+
+        if not created:
+            # 更新已有记录
+            health_data.steps = data.get('steps', health_data.steps)
+            health_data.step_goal = data.get('step_goal', health_data.step_goal)
+            health_data.active_minutes = data.get('active_minutes', health_data.active_minutes)
+            health_data.calories_burned = data.get('calories_burned', health_data.calories_burned)
+            health_data.heart_rate_avg = data.get('heart_rate_avg', health_data.heart_rate_avg)
+            health_data.heart_rate_max = data.get('heart_rate_max', health_data.heart_rate_max)
+            health_data.heart_rate_min = data.get('heart_rate_min', health_data.heart_rate_min)
+            health_data.sleep_duration_minutes = data.get('sleep_duration_minutes', health_data.sleep_duration_minutes)
+            health_data.deep_sleep_minutes = data.get('deep_sleep_minutes', health_data.deep_sleep_minutes)
+            health_data.light_sleep_minutes = data.get('light_sleep_minutes', health_data.light_sleep_minutes)
+            health_data.rem_sleep_minutes = data.get('rem_sleep_minutes', health_data.rem_sleep_minutes)
+            health_data.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': '数据同步成功',
+            'health_id': health_data.id
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': '无效的JSON数据'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@login_required
+@require_http_methods(["GET"])
+def health_latest(request):
+    """获取最近一次同步的健康数据"""
+    child_id = request.GET.get('child_id')
+    if not child_id:
+        return JsonResponse({'success': False, 'message': '缺少child_id'})
+
+    children = Child.objects.filter(parent=request.user)
+    if not children.filter(id=child_id).exists():
+        return JsonResponse({'success': False, 'message': '无权访问该儿童数据'})
+
+    child = children.get(id=child_id)
+    latest = HealthData.objects.filter(child=child).order_by('-date', '-last_sync').first()
+
+    if not latest:
+        return JsonResponse({
+            'success': True,
+            'data': None,
+            'message': '暂无数据'
+        })
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'date': latest.date.isoformat(),
+            'steps': latest.steps,
+            'step_goal': latest.step_goal,
+            'step_percent': int(latest.steps / latest.step_goal * 100) if latest.step_goal > 0 else 0,
+            'active_minutes': latest.active_minutes,
+            'calories_burned': latest.calories_burned,
+            'heart_rate_avg': latest.heart_rate_avg,
+            'heart_rate_max': latest.heart_rate_max,
+            'heart_rate_min': latest.heart_rate_min,
+            'sleep_duration_minutes': latest.sleep_duration_minutes,
+            'deep_sleep_minutes': latest.deep_sleep_minutes,
+            'light_sleep_minutes': latest.light_sleep_minutes,
+            'rem_sleep_minutes': latest.rem_sleep_minutes,
+            'last_sync': latest.last_sync.isoformat() if latest.last_sync else None,
+        }
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def health_history(request):
+    """获取历史健康数据"""
+    child_id = request.GET.get('child_id')
+    days = int(request.GET.get('days', 7))
+
+    if not child_id:
+        return JsonResponse({'success': False, 'message': '缺少child_id'})
+
+    children = Child.objects.filter(parent=request.user)
+    if not children.filter(id=child_id).exists():
+        return JsonResponse({'success': False, 'message': '无权访问该儿童数据'})
+
+    child = children.get(id=child_id)
+    start_date = timezone.now().date() - timedelta(days=days)
+
+    records = HealthData.objects.filter(
+        child=child,
+        date__gte=start_date
+    ).order_by('-date')
+
+    return JsonResponse({
+        'success': True,
+        'records': [{
+            'date': r.date.isoformat(),
+            'steps': r.steps,
+            'step_goal': r.step_goal,
+            'step_percent': int(r.steps / r.step_goal * 100) if r.step_goal > 0 else 0,
+            'active_minutes': r.active_minutes,
+            'calories_burned': r.calories_burned,
+            'heart_rate_avg': r.heart_rate_avg,
+            'sleep_duration_minutes': r.sleep_duration_minutes,
+            'deep_sleep_minutes': r.deep_sleep_minutes,
+            'light_sleep_minutes': r.light_sleep_minutes,
+        } for r in records]
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def health_today(request):
+    """获取今日健康数据（用于Dashboard轮询）"""
+    child_id = request.GET.get('child_id')
+
+    if child_id:
+        children = Child.objects.filter(parent=request.user)
+        if not children.filter(id=child_id).exists():
+            return JsonResponse({'success': False, 'message': '无权访问该儿童数据'})
+        child = children.get(id=child_id)
+    else:
+        child = Child.objects.filter(user=request.user).first()
+        if not child:
+            return JsonResponse({'success': False, 'message': '未找到孩子信息'})
+
+    today = timezone.now().date()
+    health = HealthData.objects.filter(child=child, date=today).first()
+
+    if not health:
+        return JsonResponse({
+            'success': True,
+            'data': None,
+            'message': '今日暂无数据'
+        })
+
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'date': health.date.isoformat(),
+            'steps': health.steps,
+            'step_goal': health.step_goal,
+            'step_percent': int(health.steps / health.step_goal * 100) if health.step_goal > 0 else 0,
+            'active_minutes': health.active_minutes,
+            'calories_burned': health.calories_burned,
+            'heart_rate_avg': health.heart_rate_avg,
+            'heart_rate_max': health.heart_rate_max,
+            'heart_rate_min': health.heart_rate_min,
+            'sleep_duration_minutes': health.sleep_duration_minutes,
+            'deep_sleep_minutes': health.deep_sleep_minutes,
+            'light_sleep_minutes': health.light_sleep_minutes,
+            'rem_sleep_minutes': health.rem_sleep_minutes,
+            'last_sync': health.last_sync.isoformat() if health.last_sync else None,
+        }
+    })
 
 
 # ========== 学校端视图 ==========

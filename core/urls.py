@@ -21,6 +21,12 @@ urlpatterns = [
     # YOLO 膳食识别 API (预留接口)
     path('api/yolo/recognize/', views.yolo_recognize_food, name='yolo_recognize_food'),
 
+    # 健康数据 API（供Android App调用）
+    path('api/health/sync/', views.health_sync, name='health_sync'),
+    path('api/health/latest/', views.health_latest, name='health_latest'),
+    path('api/health/history/', views.health_history, name='health_history'),
+    path('api/health/today/', views.health_today, name='health_today'),
+
     # 家长端
     path('parent/', views.parent_dashboard, name='parent_dashboard'),
     path('parent/switch-child/', views.parent_switch_child, name='parent_switch_child'),

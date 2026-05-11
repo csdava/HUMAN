@@ -57,7 +57,21 @@
       "Bash(\"/d/Applications/anaconda/python.exe\" -c \"from ultralytics import YOLO; model = YOLO\\('runs/fruit_train/weights/last.pt'\\); model.train\\(data='fruits/data.yaml', epochs=70, imgsz=640, device=0, batch=8\\)\")",
       "Bash(\"/d/Applications/anaconda/python.exe\" -c \"from ultralytics import YOLO; model = YOLO\\('runs/fruit_train/weights/last.pt'\\); model.train\\(data='fruits/data.yaml', epochs=70, imgsz=416, device=0, batch=16, cache=True, workers=4\\)\")",
       "Bash(python manage.py shell -c ' *)",
-      "Bash(python manage.py makemigrations core --name add_user_to_child)"
+      "Bash(python manage.py makemigrations core --name add_user_to_child)",
+      "Bash(wmic path *)",
+      "Bash(yolo detect *)",
+      "Bash(nvidia-smi --query-gpu=name,driver_version --format=csv,noheader)",
+      "Bash(pip debug *)",
+      "Bash(conda --version)",
+      "Bash(python -c \"import torch; print\\(f'PyTorch: {torch.__version__}'\\); print\\(f'CUDA available: {torch.cuda.is_available\\(\\)}'\\); print\\(f'CUDA device: {torch.cuda.get_device_name\\(0\\) if torch.cuda.is_available\\(\\) else None}'\\)\")",
+      "Bash(conda run *)",
+      "Bash(set KMP_DUPLICATE_LIB_OK=TRUE)",
+      "Bash(D:\\\\Applications\\\\anaconda\\\\python.exe -c \"import torch; print\\(f'PyTorch: {torch.__version__}'\\); print\\(f'CUDA available: {torch.cuda.is_available\\(\\)}'\\)\")",
+      "Bash(\"D:/Applications/anaconda/python.exe\" -c \"import torch; print\\(f'PyTorch: {torch.__version__}'\\); print\\(f'CUDA available: {torch.cuda.is_available\\(\\)}'\\)\")",
+      "Bash(\"D:/Applications/anaconda/python.exe\" -c \"import os; os.environ['KMP_DUPLICATE_LIB_OK']='TRUE'; import torch; print\\(f'PyTorch: {torch.__version__}'\\); print\\(f'CUDA available: {torch.cuda.is_available\\(\\)}'\\)\")",
+      "Bash(\"D:/Applications/anaconda/python.exe\" -c \"import os; os.environ['KMP_DUPLICATE_LIB_OK']='TRUE'; from ultralytics import YOLO; model = YOLO\\('yolo26n.pt'\\); results = model.train\\(data='fruits.v3i.yolov8/data.yaml', epochs=100, imgsz=640, device=0, project='runs', name='fruit_train'\\)\")",
+      "Bash(python manage.py makemigrations core --name add_health_data)",
+      "Bash(python manage.py migrate core)"
     ],
     "additionalDirectories": [
       "D:\\User\\Documents\\PycharmProjects\\DjangoProject333\\runs\\detect\\train-2\\weights"

@@ -301,6 +301,41 @@ class Recipe(models.Model):
         return self.name
 
 
+class HealthData(models.Model):
+    """手环健康数据"""
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='health_data', verbose_name='孩子')
+    date = models.DateField(verbose_name='日期')
+
+    # 运动数据
+    steps = models.IntegerField(default=0, verbose_name='步数')
+    step_goal = models.IntegerField(default=8000, verbose_name='步数目标')
+    active_minutes = models.IntegerField(default=0, verbose_name='活动分钟')
+    calories_burned = models.FloatField(default=0, verbose_name='消耗卡路里')
+
+    # 心率数据
+    heart_rate_avg = models.IntegerField(default=0, verbose_name='平均心率')
+    heart_rate_max = models.IntegerField(default=0, verbose_name='最大心率')
+    heart_rate_min = models.IntegerField(default=0, verbose_name='最小心率')
+
+    # 睡眠数据
+    sleep_duration_minutes = models.IntegerField(default=0, verbose_name='睡眠时长(分钟)')
+    deep_sleep_minutes = models.IntegerField(default=0, verbose_name='深睡时长')
+    light_sleep_minutes = models.IntegerField(default=0, verbose_name='浅睡时长')
+    rem_sleep_minutes = models.IntegerField(default=0, verbose_name='REM时长')
+
+    # 元数据
+    last_sync = models.DateTimeField(auto_now=True, verbose_name='最后同步时间')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        unique_together = ['child', 'date']
+        verbose_name = '健康数据'
+        verbose_name_plural = '健康数据'
+
+    def __str__(self):
+        return f"{self.child.nickname} - {self.date}"
+
+
 class School(models.Model):
     """学校"""
     name = models.CharField(max_length=100, verbose_name='学校名称')
