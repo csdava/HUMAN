@@ -350,6 +350,41 @@ class Recipe(models.Model):
         return self.name
 
 
+class HealthData(models.Model):
+    """手环健康数据"""
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='health_data', verbose_name='孩子')
+    date = models.DateField(verbose_name='日期')
+
+    # 运动数据
+    steps = models.IntegerField(default=0, verbose_name='步数')
+    step_goal = models.IntegerField(default=8000, verbose_name='步数目标')
+    active_minutes = models.IntegerField(default=0, verbose_name='活动分钟')
+    calories_burned = models.FloatField(default=0, verbose_name='消耗卡路里')
+
+    # 心率数据
+    heart_rate_avg = models.IntegerField(default=0, verbose_name='平均心率')
+    heart_rate_max = models.IntegerField(default=0, verbose_name='最大心率')
+    heart_rate_min = models.IntegerField(default=0, verbose_name='最小心率')
+
+    # 睡眠数据
+    sleep_duration_minutes = models.IntegerField(default=0, verbose_name='睡眠时长(分钟)')
+    deep_sleep_minutes = models.IntegerField(default=0, verbose_name='深睡时长')
+    light_sleep_minutes = models.IntegerField(default=0, verbose_name='浅睡时长')
+    rem_sleep_minutes = models.IntegerField(default=0, verbose_name='REM时长')
+
+    # 元数据
+    last_sync = models.DateTimeField(auto_now=True, verbose_name='最后同步时间')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        unique_together = ['child', 'date']
+        verbose_name = '健康数据'
+        verbose_name_plural = '健康数据'
+
+    def __str__(self):
+        return f"{self.child.nickname} - {self.date}"
+
+
 class School(models.Model):
     """学校"""
     name = models.CharField(max_length=100, verbose_name='学校名称')
@@ -422,6 +457,10 @@ class HealthChallenge(models.Model):
         ('completed', '已结束'),
         ('cancelled', '已取消'),
     ]
+    SCOPE_CHOICES = [
+        ('class', '本班'),
+        ('school', '校级'),
+    ]
 
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='challenges', verbose_name='发布老师')
     title = models.CharField(max_length=200, verbose_name='挑战标题')
@@ -431,6 +470,12 @@ class HealthChallenge(models.Model):
     end_date = models.DateField(verbose_name='结束日期')
     target_value = models.IntegerField(default=7, verbose_name='目标值')
     power_reward = models.IntegerField(default=50, verbose_name='完成奖励体力')
+    scope = models.CharField(
+        max_length=20, choices=SCOPE_CHOICES, default='class', verbose_name='发起范围'
+    )
+    rule_description = models.TextField(blank=True, verbose_name='自定义规则说明')
+    reward_description = models.TextField(blank=True, verbose_name='奖励说明')
+    summary_report = models.TextField(blank=True, verbose_name='结束后总结报告')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name='状态')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
 
@@ -458,3 +503,75 @@ class ChallengeProgress(models.Model):
 
     def __str__(self):
         return f"{self.child.nickname} - {self.challenge.title}"
+
+
+class HealthCourseResource(models.Model):
+    """校本健康课程资源（推送至本班家庭）"""
+    RESOURCE_TYPES = [
+        ('article', '图文科普'),
+        ('video', '短视频'),
+        ('ppt', '课件资料'),
+        ('mixed', '混合'),
+    ]
+
+    teacher = models.ForeignKey(
+        Teacher, on_delete=models.CASCADE, related_name='health_resources', verbose_name='发布老师'
+    )
+    title = models.CharField(max_length=200, verbose_name='资源标题')
+    resource_type = models.CharField(
+        max_length=20, choices=RESOURCE_TYPES, default='article', verbose_name='资源类型'
+    )
+    summary = models.TextField(blank=True, verbose_name='摘要')
+    content = models.TextField(blank=True, verbose_name='正文或导读')
+    media_url = models.CharField(max_length=500, blank=True, verbose_name='视频/附件链接')
+    unlock_requires_task = models.BooleanField(default=True, verbose_name='需健康打卡后解锁')
+    pushed_at = models.DateTimeField(null=True, blank=True, verbose_name='推送时间')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        verbose_name = '健康课程资源'
+        verbose_name_plural = '健康课程资源'
+        ordering = ['-created_at']
+
+
+class HealthResourceUnlock(models.Model):
+    resource = models.ForeignKey(
+        HealthCourseResource, on_delete=models.CASCADE, related_name='unlocks', verbose_name='资源'
+    )
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='resource_unlocks', verbose_name='孩子')
+    unlocked_at = models.DateTimeField(auto_now_add=True, verbose_name='解锁时间')
+
+    class Meta:
+        verbose_name = '资源解锁记录'
+        verbose_name_plural = '资源解锁记录'
+        unique_together = ['resource', 'child']
+
+
+class SchoolHomeMessage(models.Model):
+    """家校沟通记录（学校端留档）"""
+    teacher = models.ForeignKey(
+        Teacher, on_delete=models.CASCADE, related_name='home_messages', verbose_name='老师'
+    )
+    title = models.CharField(max_length=200, verbose_name='主题')
+    body = models.TextField(verbose_name='沟通要点')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='记录时间')
+
+    class Meta:
+        verbose_name = '家校沟通'
+        verbose_name_plural = '家校沟通'
+        ordering = ['-created_at']
+
+
+class SchoolHealthArchive(models.Model):
+    """健康教育数据归档快照"""
+    teacher = models.ForeignKey(
+        Teacher, on_delete=models.CASCADE, related_name='health_archives', verbose_name='老师'
+    )
+    title = models.CharField(max_length=200, verbose_name='归档标题')
+    snapshot_json = models.TextField(verbose_name='统计数据快照(JSON)')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='归档时间')
+
+    class Meta:
+        verbose_name = '健康教育归档'
+        verbose_name_plural = '健康教育归档'
+        ordering = ['-created_at']

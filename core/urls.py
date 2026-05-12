@@ -23,6 +23,13 @@ urlpatterns = [
     # YOLO 膳食识别 API (预留接口)
     path('api/yolo/recognize/', views.yolo_recognize_food, name='yolo_recognize_food'),
 
+    # 健康数据 API（供Android App调用）
+    path('api/health/sync/', views.health_sync, name='health_sync'),
+    path('api/health/manual-input/', views.health_manual_input, name='health_manual_input'),
+    path('api/health/latest/', views.health_latest, name='health_latest'),
+    path('api/health/history/', views.health_history, name='health_history'),
+    path('api/health/today/', views.health_today, name='health_today'),
+
     # 家长端（建议仅由负责家长端的同事修改本块，避免与儿童端/学校端冲突）
     path('parent/', views.parent_dashboard, name='parent_dashboard'),
     path('parent/switch-child/', views.parent_switch_child, name='parent_switch_child'),
@@ -54,4 +61,11 @@ urlpatterns = [
     path('school/create-activity/', views.school_create_activity, name='school_create_activity'),
     path('school/create-challenge/', views.school_create_challenge, name='school_create_challenge'),
     path('school/class-stats/', views.school_class_stats, name='school_class_stats'),
+    path('school/challenge/<int:pk>/stats/', views.school_challenge_stats, name='school_challenge_stats'),
+    path('school/challenge/<int:pk>/finalize/', views.school_challenge_finalize, name='school_challenge_finalize'),
+    path('school/resource/create/', views.school_resource_create, name='school_resource_create'),
+    path('school/resource/<int:pk>/push/', views.school_resource_push, name='school_resource_push'),
+    path('school/resource/resync/', views.school_resource_resync, name='school_resource_resync'),
+    path('school/message/create/', views.school_message_create, name='school_message_create'),
+    path('school/archive/create/', views.school_archive_create, name='school_archive_create'),
 ]
