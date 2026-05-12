@@ -24,6 +24,7 @@ urlpatterns = [
     # 健康数据 API（供Android App调用）
     path('api/health/sync/', views.health_sync, name='health_sync'),
     path('api/health/manual-input/', views.health_manual_input, name='health_manual_input'),
+    path('api/health/auto-generate/', views.health_auto_generate, name='health_auto_generate'),
     path('api/health/latest/', views.health_latest, name='health_latest'),
     path('api/health/history/', views.health_history, name='health_history'),
     path('api/health/today/', views.health_today, name='health_today'),

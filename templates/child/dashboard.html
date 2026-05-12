@@ -932,10 +932,90 @@
                 <p style="color: #999;">正在加载健康数据...</p>
             </div>
         </div>
-        <div style="text-align: center; margin-top: 15px;">
-            <button onclick="openHealthModal()" style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
-                📱 输入手环数据
+        <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+            <button onclick="autoGenerateHealth()" style="background: linear-gradient(135deg, #4CAF50, #81C784); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                自动同步
             </button>
+            <button onclick="openHealthModal()" style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                手动输入
+            </button>
+        </div>
+    </div>
+
+    <!-- 健康数据录入Modal -->
+    <div class="modal-overlay" id="healthModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <div class="modal-title">📱 手动输入健康数据</div>
+                <button class="modal-close" onclick="closeHealthModal()">&times;</button>
+            </div>
+            <div style="max-height: 70vh; overflow-y: auto;">
+                <div style="padding: 10px 0;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🏃 步数</label>
+                        <input type="number" id="healthSteps" placeholder="今日步数" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🎯 步数目标</label>
+                        <input type="number" id="healthStepGoal" placeholder="目标步数" value="8000" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">⏱️ 活动分钟</label>
+                        <input type="number" id="healthActiveMinutes" placeholder="活动时长(分钟)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🔥 消耗卡路里</label>
+                        <input type="number" id="healthCalories" placeholder="消耗卡路里" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">❤️ 心率 - 平均</label>
+                        <input type="number" id="healthHeartRateAvg" placeholder="平均心率(bpm)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">心率最大</label>
+                            <input type="number" id="healthHeartRateMax" placeholder="最大" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">心率最小</label>
+                            <input type="number" id="healthHeartRateMin" placeholder="最小" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">😴 睡眠时长</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="healthSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <input type="number" id="healthSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">深睡时长</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="healthDeepSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                                <input type="number" id="healthDeepSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">浅睡时长</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="healthLightSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                                <input type="number" id="healthLightSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🌙 REM睡眠时长</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="healthRemSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <input type="number" id="healthRemSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <button onclick="submitHealthData()" style="width: 100%; background: linear-gradient(135deg, #4CAF50, #81C784); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                        保存健康数据
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1483,52 +1563,65 @@ function displayResults(data) {
 
 // 健康数据录入弹窗
 function openHealthModal() {
-    document.getElementById('healthModal').style.display = 'flex';
+    document.getElementById('healthModal').classList.add('active');
 }
 
 function closeHealthModal() {
-    document.getElementById('healthModal').style.display = 'none';
+    document.getElementById('healthModal').classList.remove('active');
 }
 
 function submitHealthData() {
     const steps = document.getElementById('healthSteps').value;
-    const heartRateAvg = document.getElementById('healthHeartRate').value;
+    const stepGoal = document.getElementById('healthStepGoal').value;
+    const activeMinutes = document.getElementById('healthActiveMinutes').value;
+    const calories = document.getElementById('healthCalories').value;
+    const heartRateAvg = document.getElementById('healthHeartRateAvg').value;
     const heartRateMax = document.getElementById('healthHeartRateMax').value;
     const heartRateMin = document.getElementById('healthHeartRateMin').value;
     const sleepHours = document.getElementById('healthSleepHours').value;
-    const deepSleep = document.getElementById('healthDeepSleep').value;
-    const lightSleep = document.getElementById('healthLightSleep').value;
+    const sleepMinutes = document.getElementById('healthSleepMinutes').value;
+    const deepSleepHours = document.getElementById('healthDeepSleepHours').value;
+    const deepSleepMinutes = document.getElementById('healthDeepSleepMinutes').value;
+    const lightSleepHours = document.getElementById('healthLightSleepHours').value;
+    const lightSleepMinutes = document.getElementById('healthLightSleepMinutes').value;
+    const remSleepHours = document.getElementById('healthRemSleepHours').value;
+    const remSleepMinutes = document.getElementById('healthRemSleepMinutes').value;
 
     if (!steps && !heartRateAvg && !sleepHours) {
         showToast('请至少填写一项数据');
         return;
     }
 
-    const data = {
-        steps: parseInt(steps) || 0,
-        heart_rate_avg: parseInt(heartRateAvg) || 0,
-        heart_rate_max: parseInt(heartRateMax) || 0,
-        heart_rate_min: parseInt(heartRateMin) || 0,
-        sleep_duration_minutes: Math.round((parseFloat(sleepHours) || 0) * 60),
-        deep_sleep_minutes: Math.round((parseFloat(deepSleep) || 0) * 60),
-        light_sleep_minutes: Math.round((parseFloat(lightSleep) || 0) * 60),
-        step_goal: 8000
-    };
+    const formData = new FormData();
+    formData.append('steps', steps || 0);
+    formData.append('step_goal', stepGoal || 8000);
+    formData.append('active_minutes', activeMinutes || 0);
+    formData.append('calories_burned', calories || 0);
+    formData.append('heart_rate_avg', heartRateAvg || 0);
+    formData.append('heart_rate_max', heartRateMax || 0);
+    formData.append('heart_rate_min', heartRateMin || 0);
+    formData.append('sleep_hours', sleepHours || 0);
+    formData.append('sleep_minutes', sleepMinutes || 0);
+    formData.append('deep_sleep_hours', deepSleepHours || 0);
+    formData.append('deep_sleep_minutes', deepSleepMinutes || 0);
+    formData.append('light_sleep_hours', lightSleepHours || 0);
+    formData.append('light_sleep_minutes', lightSleepMinutes || 0);
+    formData.append('rem_sleep_hours', remSleepHours || 0);
+    formData.append('rem_sleep_minutes', remSleepMinutes || 0);
 
     fetch('/api/health/manual-input/', {
         method: 'POST',
         headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
+            'X-CSRFToken': getCookie('csrftoken')
         },
-        body: JSON.stringify(data)
+        body: formData
     })
     .then(r => r.json())
     .then(res => {
         if (res.success) {
             showToast('数据已保存！');
             closeHealthModal();
-            loadHealthData();  // 刷新显示
+            loadHealthData();
         } else {
             showToast(res.message || '保存失败');
         }
@@ -1536,6 +1629,39 @@ function submitHealthData() {
     .catch(err => {
         showToast('保存失败，请重试');
     });
+}
+
+// 自动生成健康数据
+function autoGenerateHealth() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '同步中...';
+
+    // 等待5秒后再调用API
+    setTimeout(() => {
+        fetch('/api/health/auto-generate/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                showToast('已生成今日健康数据！');
+                loadHealthData();
+            } else {
+                showToast(res.message || '生成失败');
+            }
+        })
+        .catch(err => {
+            showToast('生成失败，请重试');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '自动同步';
+        });
+    }, 5000);
 }
 
 // 健康数据相关
