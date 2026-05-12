@@ -1491,11 +1491,66 @@ def _sync_resource_unlocks(resource):
             HealthResourceUnlock.objects.get_or_create(resource=resource, child=child)
 
 
+def _challenges_visible_to_teacher(teacher):
+    """本校范围内：本人发起 + 同校校级挑战。"""
+    return HealthChallenge.objects.filter(
+        Q(teacher=teacher) | Q(scope='school', teacher__school=teacher.school)
+    ).distinct()
+
+
+def _active_challenges_visible_to_teacher(teacher):
+    return _challenges_visible_to_teacher(teacher).filter(status='active')
+
+
+def _ensure_challenge_progress_rows(challenge):
+    """儿童端依赖 ChallengeProgress，发布挑战时必须为学生建档。"""
+    for child in _challenge_audience_children(challenge):
+        ChallengeProgress.objects.get_or_create(
+            challenge=challenge,
+            child=child,
+            defaults={'current_value': 0, 'is_completed': False},
+        )
+
+
+def _sync_challenge_progress_to_children(challenge):
+    """根据既有打卡/膳食数据刷新进度，写入儿童端同一套模型。"""
+    if challenge.status != 'active':
+        return
+    for prog in ChallengeProgress.objects.filter(challenge=challenge).select_related('child'):
+        raw = _challenge_progress_count(challenge, prog.child)
+        capped = min(raw, challenge.target_value)
+        done = raw >= challenge.target_value
+        prog.current_value = capped
+        prog.is_completed = done
+        if done and prog.completed_at is None:
+            prog.completed_at = timezone.now()
+        elif not done:
+            prog.completed_at = None
+        prog.save()
+
+
+def _sync_all_active_challenges_for_teacher(teacher):
+    for c in _active_challenges_visible_to_teacher(teacher):
+        _ensure_challenge_progress_rows(c)
+        _sync_challenge_progress_to_children(c)
+
+
+def _broadcast_encouragements(sender_user, children, message):
+    """复用家长端/儿童端已在用的 Encouragement，作班级通知。"""
+    text = (message or '').strip()
+    if not text:
+        return
+    text = text[:1900]
+    for child in children:
+        Encouragement.objects.create(sender=sender_user, child=child, message=text)
+
+
 @login_required
 @user_passes_test(is_teacher)
 def school_dashboard(request):
     """学校端首页 — 校园健康教育管理中枢"""
     teacher = request.user.teacher_profile
+    _sync_all_active_challenges_for_teacher(teacher)
     today = timezone.now().date()
     week_ago = today - timedelta(days=7)
 
@@ -1542,8 +1597,8 @@ def school_dashboard(request):
                 'pending_count': pending
             })
 
-    activities = Activity.objects.filter(is_active=True)[:5]
-    challenges = HealthChallenge.objects.filter(teacher=teacher).order_by('-created_at')[:25]
+    activities = Activity.objects.filter(teacher=teacher, is_active=True).order_by('-created_at')[:5]
+    challenges = _challenges_visible_to_teacher(teacher).order_by('-created_at')[:25]
     challenge_stats = {c.id: _challenge_stats_bundle(c, teacher) for c in challenges}
     challenges_with_stats = [{'challenge': c, 'stats': challenge_stats[c.id]} for c in challenges]
 
@@ -1620,6 +1675,11 @@ def school_create_activity(request):
         content=content,
         activity_type=activity_type
     )
+    msg = (
+        f"【班级活动】{teacher.school.name} · {teacher.class_name}\n"
+        f"{title}\n{content[:900]}"
+    )
+    _broadcast_encouragements(teacher.user, _teacher_class_children(teacher), msg)
 
     return JsonResponse({'success': True, 'message': '活动已发布'})
 
@@ -1651,7 +1711,7 @@ def school_create_challenge(request):
     start = datetime.strptime(start_date, '%Y-%m-%d').date()
     end = datetime.strptime(end_date, '%Y-%m-%d').date()
 
-    HealthChallenge.objects.create(
+    challenge = HealthChallenge.objects.create(
         teacher=teacher,
         title=title,
         description=description,
@@ -1663,6 +1723,16 @@ def school_create_challenge(request):
         scope=scope,
         rule_description=rule_description,
         reward_description=reward_description,
+    )
+    _ensure_challenge_progress_rows(challenge)
+    _sync_challenge_progress_to_children(challenge)
+    tip = f"时间 {start} ~ {end}\n{description[:800]}"
+    if reward_description:
+        tip += f"\n奖励说明：{reward_description[:300]}"
+    _broadcast_encouragements(
+        teacher.user,
+        _challenge_audience_children(challenge),
+        f"【健康挑战】{title}\n{tip}",
     )
 
     return JsonResponse({'success': True, 'message': '挑战赛已发布'})
@@ -1714,7 +1784,12 @@ def school_class_stats(request):
 @user_passes_test(is_teacher)
 def school_challenge_stats(request, pk):
     teacher = request.user.teacher_profile
-    challenge = get_object_or_404(HealthChallenge, pk=pk, teacher=teacher)
+    challenge = get_object_or_404(
+        HealthChallenge.objects.filter(
+            Q(teacher=teacher) | Q(scope='school', teacher__school=teacher.school)
+        ),
+        pk=pk,
+    )
     bundle = _challenge_stats_bundle(challenge, teacher)
     return JsonResponse(bundle)
 
@@ -1774,9 +1849,23 @@ def school_resource_create(request):
 def school_resource_push(request, pk):
     teacher = request.user.teacher_profile
     resource = get_object_or_404(HealthCourseResource, pk=pk, teacher=teacher)
+    first_push = resource.pushed_at is None
     resource.pushed_at = timezone.now()
     resource.save()
     _sync_resource_unlocks(resource)
+    if first_push:
+        lines = [
+            f"【健康微课】{resource.title}",
+            resource.summary or '',
+            resource.media_url or '',
+        ]
+        if resource.unlock_requires_task:
+            lines.append('请完成健康打卡，系统将自动解锁本篇内容。')
+        _broadcast_encouragements(
+            teacher.user,
+            _teacher_class_children(teacher),
+            '\n'.join(s for s in lines if s),
+        )
     return JsonResponse({'success': True, 'message': '已推送至本班家庭端可见队列，并同步打卡解锁'})
 
 
