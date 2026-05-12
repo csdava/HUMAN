@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 16
+names: ['Blueberries', 'Hami Melon', 'Mango', 'Sakya fruit', 'apple', 'banana', 'grape', 'guava', 'mangosteen', 'orange', 'pear', 'pineapple', 'pitaya', 'strawberry', 'tomato', 'watermelon']
+
+roboflow:
+  workspace: smallicecream
+  project: fruits-oa6gz-2lki0
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/smallicecream/fruits-oa6gz-2lki0/dataset/3

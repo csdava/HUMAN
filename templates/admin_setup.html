@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}初始化演示数据{% endblock %}
+
+{% block extra_css %}
+<style>
+    .setup-container {
+        max-width: 500px;
+        margin: 80px auto;
+        padding: 40px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .setup-title {
+        text-align: center;
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+    .setup-subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+    .form-section {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .form-section h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+    .btn-setup {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        cursor: pointer;
+    }
+    .btn-setup:hover {
+        opacity: 0.9;
+    }
+    .info-box {
+        background: #e3f2fd;
+        color: #1565c0;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <h1 class="setup-title">初始化演示数据</h1>
+    <p class="setup-subtitle">创建默认账户和数据</p>
+
+    <div class="info-box">
+        <strong>说明：</strong>此页面用于快速创建演示数据。创建后将生成以下账户：<br>
+        - <strong>家长账号</strong>：parent1 / parent123<br>
+        - <strong>老师账号</strong>：teacher1 / teacher123<br>
+        - <strong>超级管理员</strong>：admin / admin123
+    </div>
+
+    <form method="POST" id="setupForm">
+        {% csrf_token %}
+
+        <div class="form-section">
+            <h3>家长账户</h3>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" name="parent_username" value="parent1">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" name="parent_password" value="parent123">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>老师账户</h3>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" name="teacher_username" value="teacher1">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" name="teacher_password" value="teacher123">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>管理员账户</h3>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" name="admin_username" value="admin">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" name="admin_password" value="admin123">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-setup">创建演示数据</button>
+    </form>
+</div>
+
+<div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #4CAF50; color: white; padding: 12px 24px; border-radius: 8px; display: none;"></div>
+
+<script>
+document.getElementById('setupForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    fetch('/setup/', {
+        method: 'POST',
+        body: formData,
+        headers: {'X-CSRFToken': getCookie('csrftoken')}
+    })
+    .then(r => r.json())
+    .then(data => {
+        const toast = document.getElementById('toast');
+        toast.textContent = data.message;
+        toast.style.display = 'block';
+        toast.style.background = data.success ? '#4CAF50' : '#f44336';
+        setTimeout(() => toast.style.display = 'none', 3000);
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

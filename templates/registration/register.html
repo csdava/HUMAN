@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - 童视智圈{% endblock %}
+
+{% block extra_css %}
+<style>
+.register-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px 24px;
+}
+.register-card {
+    background: white;
+    border-radius: 20px;
+    padding: 48px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.register-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.register-header h1 {
+    font-size: 28px;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+.register-header p {
+    color: #666;
+    font-size: 15px;
+}
+.role-tabs {
+    display: flex;
+    margin-bottom: 28px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 4px;
+}
+.role-tab {
+    flex: 1;
+    padding: 12px 16px;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+}
+.role-tab.active {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.form-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+.form-section h3 {
+    font-size: 15px;
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.form-group {
+    margin-bottom: 18px;
+}
+.form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+.form-input, .form-select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+.btn-register {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-register:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+.home-link {
+    display: block;
+    text-align: center;
+    margin-top: 24px;
+    color: #888;
+    font-size: 14px;
+}
+.home-link:hover {
+    color: #666;
+}
+</style>
+{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="register-page">
+    <div class="register-card">
+        <div class="register-header">
+            <h1>创建账户</h1>
+            <p>
+                {% if role == 'child' %}创建小勇士账户
+                {% elif role == 'teacher' %}创建教师账户
+                {% else %}创建家长账户{% endif %}
+            </p>
+        </div>
+
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'register' %}">
+            {% csrf_token %}
+            <input type="hidden" name="role" value="{{ role }}">
+
+            <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input type="text" name="username" class="form-input" required placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <input type="password" name="password" class="form-input" required placeholder="请输入密码">
+            </div>
+
+            {% if role == 'child' %}
+            <div class="form-section">
+                <h3>小勇士信息</h3>
+                <div class="form-group">
+                    <label class="form-label">真实姓名</label>
+                    <input type="text" name="child_name" class="form-input" required placeholder="请输入真实姓名">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">昵称（显示名称）</label>
+                    <input type="text" name="nickname" class="form-input" required placeholder="请输入昵称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">性别</label>
+                    <select name="gender" class="form-select" required>
+                        <option value="">请选择</option>
+                        <option value="M">男孩</option>
+                        <option value="F">女孩</option>
+                    </select>
+                </div>
+            </div>
+            {% elif role == 'parent' %}
+            <div class="form-section">
+                <h3>关联孩子账号</h3>
+                <div class="form-group">
+                    <label class="form-label">孩子的绑定码（可选）</label>
+                    <input type="text" name="bind_code" class="form-input" maxlength="6" placeholder="请输入6位绑定码" style="text-transform: uppercase; letter-spacing: 3px; font-weight: bold; text-align: center;">
+                </div>
+                <p style="font-size: 12px; color: #888; margin-top: 8px;">绑定码由孩子在注册成功后的界面提供，或联系学校获取</p>
+            </div>
+            {% elif role == 'teacher' %}
+            <div class="form-section">
+                <h3>学校信息</h3>
+                <div class="form-group">
+                    <label class="form-label">学校名称</label>
+                    <input type="text" name="school_name" class="form-input" required placeholder="请输入学校名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">班级名称</label>
+                    <input type="text" name="class_name" class="form-input" required placeholder="如：三年级一班">
+                </div>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn-register">
+                {% if role == 'child' %}创建小勇士
+                {% elif role == 'teacher' %}创建教师账户
+                {% else %}创建家长账户{% endif %}
+            </button>
+        </form>
+
+        <a href="{% url 'index' %}" class="home-link">← 返回首页</a>
+    </div>
+</div>
+{% endblock %}

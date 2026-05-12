@@ -1,0 +1,2039 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}童视智圈 - 儿童端{% endblock %}
+
+{% block header %}
+<header class="header" style="display: none;"></header>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .child-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        min-height: 100vh;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .child-info {
+        flex: 1;
+    }
+
+    .child-name {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .current-date {
+        font-size: 14px;
+        color: #aaa;
+    }
+
+    .bind-code-panel {
+        margin-top: 16px;
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .bind-code-panel .bind-label {
+        font-size: 12px;
+        color: #b0b8d0;
+        margin-bottom: 8px;
+    }
+
+    .bind-code-panel .bind-value {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+
+    .bind-code-panel .bind-hint {
+        font-size: 12px;
+        color: #9aa5c4;
+        line-height: 1.5;
+    }
+
+    .bind-code-panel .btn-copy-bind {
+        margin-top: 10px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: none;
+        background: linear-gradient(135deg, #4CAF50, #66bb6a);
+        color: #fff;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .parent-notes-card {
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 14px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .parent-notes-card h3 {
+        margin: 0 0 8px;
+        font-size: 15px;
+        color: #f57f17;
+    }
+
+    .parent-notes-card p {
+        margin: 0;
+        font-size: 14px;
+        color: #5d4037;
+        line-height: 1.55;
+        white-space: pre-wrap;
+    }
+
+    .intake-readonly-card {
+        background: #e8f5e9;
+        border: 1px solid #a5d6a7;
+        border-radius: 14px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .intake-readonly-card h3 {
+        margin: 0 0 8px;
+        font-size: 15px;
+        color: #2e7d32;
+    }
+
+    .intake-readonly-card p {
+        margin: 0;
+        font-size: 14px;
+        color: #1b5e20;
+        line-height: 1.55;
+    }
+
+    .child-alerts-section {
+        background: white;
+        border-radius: 16px;
+        padding: 22px 24px;
+        margin-bottom: 16px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .child-alerts-section h3 {
+        margin: 0 0 6px;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .child-alerts-section .alerts-sub {
+        font-size: 13px;
+        color: #888;
+        margin: 0 0 14px;
+        line-height: 1.5;
+    }
+
+    .child-alert-row {
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border-left: 4px solid #c62828;
+        background: #fff8f8;
+        font-size: 14px;
+    }
+
+    .child-alert-row.read {
+        border-left-color: #bdbdbd;
+        background: #fafafa;
+    }
+
+    .child-alert-row.medical {
+        border-left-color: #1565c0;
+        background: #f3f8ff;
+    }
+
+    .child-alert-meta {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 6px;
+    }
+
+    .level-badge {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: bold;
+        color: #333;
+        font-size: 18px;
+    }
+
+    .warrior-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 15px;
+        display: flex;
+        gap: 30px;
+        align-items: center;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .warrior-avatar {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, #4CAF50, #81C784);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 70px;
+        box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .warrior-avatar .icon {
+        color: white;
+        position: relative;
+        z-index: 1;
+    }
+
+    .avatar-hover-plus {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 50px;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .warrior-avatar:hover .avatar-hover-plus {
+        opacity: 1;
+    }
+
+    .warrior-stats {
+        flex: 1;
+    }
+
+    .stats-title {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 15px;
+        font-weight: bold;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+
+    .stat-box {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .power-section {
+        flex: 1;
+    }
+
+    .power-title {
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .progress-bar {
+        height: 20px;
+        background: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4CAF50, #81C784);
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+
+    .power-text {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .five-color-section {
+        flex: 1;
+    }
+
+    .gems-container {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .gem {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        opacity: 0.3;
+        transition: all 0.3s;
+        color: white;
+    }
+
+    .gem.active {
+        opacity: 1;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .gem-red { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); }
+    .gem-yellow { background: linear-gradient(135deg, #ffd93d, #ffb347); }
+    .gem-green { background: linear-gradient(135deg, #6bcb77, #4CAF50); }
+    .gem-blue { background: linear-gradient(135deg, #4dabf7, #2196F3); }
+    .gem-purple { background: linear-gradient(135deg, #b19fff, #9C27B0); }
+
+    .gem-label {
+        font-size: 10px;
+        color: #666;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .tasks-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .task-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .task-card {
+        background: #f9f9f9;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s;
+    }
+
+    .task-card:hover {
+        background: #f0f0f0;
+    }
+
+    .task-card.completed {
+        background: #e8f5e9;
+    }
+
+    .task-icon {
+        font-size: 40px;
+        color: #666;
+    }
+
+    .task-details {
+        flex: 1;
+    }
+
+    .task-name {
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .task-reward {
+        font-size: 14px;
+        color: #4CAF50;
+    }
+
+    .task-action {
+        min-width: 120px;
+        text-align: right;
+    }
+
+    .btn-apply {
+        background: linear-gradient(135deg, #4CAF50, #81C784);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-apply:hover:not(:disabled) {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn-apply:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+    .btn-waiting {
+        background: #666;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+
+    .btn-completed {
+        background: #4CAF50;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .meal-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .meal-upload {
+        border: 2px dashed #4CAF50;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .meal-upload:hover {
+        background: #f0f9f0;
+    }
+
+    .meal-upload-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+        color: #666;
+    }
+
+    .meal-upload-text {
+        font-size: 16px;
+        color: #333;
+    }
+
+    .meal-upload-hint {
+        font-size: 12px;
+        color: #999;
+        margin-top: 5px;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #999;
+    }
+
+    .upload-options {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .upload-option {
+        flex: 1;
+        padding: 30px;
+        border: 2px dashed #ccc;
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .upload-option:hover {
+        border-color: #4CAF50;
+        background: #f0f9f0;
+    }
+
+    .upload-option-icon {
+        font-size: 36px;
+        margin-bottom: 10px;
+    }
+
+    .upload-option-text {
+        font-size: 14px;
+        color: #333;
+    }
+
+    #cameraPreview {
+        display: none;
+        width: 100%;
+        max-width: 400px;
+        border-radius: 8px;
+        margin: 0 auto 15px;
+    }
+
+    #capturedPhoto {
+        display: none;
+        width: 100%;
+        max-width: 400px;
+        border-radius: 8px;
+        margin: 0 auto 15px;
+    }
+
+    .camera-controls {
+        display: none;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .btn-capture {
+        background: #4CAF50;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .btn-recapture {
+        background: #666;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .btn-analyze {
+        background: linear-gradient(135deg, #4CAF50, #81C784);
+        color: white;
+        padding: 15px 40px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        display: none;
+        margin: 0 auto;
+    }
+
+    .btn-analyze:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+    }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #4CAF50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .result-section {
+        display: none;
+    }
+
+    .result-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .food-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .food-tag {
+        background: #e8f5e9;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        color: #2e7d32;
+    }
+
+    .nutrition-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .nutrition-item {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .nutrition-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+
+    .nutrition-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .score-display {
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+
+    .score-value {
+        font-size: 48px;
+        font-weight: bold;
+        color: #2e7d32;
+    }
+
+    .score-label {
+        font-size: 16px;
+        color: #666;
+    }
+
+    .gems-display {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .gems-display .gem {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        opacity: 0.3;
+        color: white;
+    }
+
+    .gems-display .gem.active {
+        opacity: 1;
+    }
+
+    .bonus-message {
+        text-align: center;
+        padding: 15px;
+        background: #fff3e0;
+        border-radius: 8px;
+        color: #e65100;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .meal-records {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+
+    .meal-record {
+        background: #f9f9f9;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .meal-type {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .meal-score {
+        font-size: 24px;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+
+    .meal-score span {
+        font-size: 14px;
+        color: #999;
+    }
+
+    .badges-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+
+    .badges-grid {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .badge-item {
+        width: 60px;
+        height: 60px;
+        background: #f9f9f9;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: #666;
+        position: relative;
+    }
+
+    .badge-item.earned {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #333;
+    }
+
+    .badge-item.earned::after {
+        content: 'OK';
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        background: #4CAF50;
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        font-size: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .challenge-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+
+    .challenge-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+
+    .challenge-icon {
+        font-size: 32px;
+        color: #9C27B0;
+    }
+
+    .challenge-info {
+        flex: 1;
+    }
+
+    .challenge-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .challenge-progress {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .challenge-bar {
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+
+    .challenge-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4CAF50, #81C784);
+        border-radius: 4px;
+    }
+
+    .encouragement-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+
+    .encouragement-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .encouragement-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        background: #fff3e0;
+        border-radius: 8px;
+    }
+
+    .encouragement-icon {
+        font-size: 20px;
+        color: #FF9800;
+    }
+
+    .encouragement-text {
+        flex: 1;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .encouragement-time {
+        font-size: 12px;
+        color: #999;
+    }
+
+    .encouragement-close {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="child-container">
+    {% if error %}
+    <div style="text-align: center; padding: 60px 20px;">
+        <h2 style="color: #e65100; margin-bottom: 20px;">{{ error }}</h2>
+        <p style="color: #666; margin-bottom: 30px;">您的账户没有关联的儿童信息</p>
+        <a href="{% url 'logout' %}" style="color: #667eea;">退出登录</a>
+    </div>
+    {% else %}
+    <div class="page-header">
+        <div class="child-info">
+            <div class="child-name">{{ child.nickname }}</div>
+            <div class="current-date">{{ today|date:"Y年m月d日" }}</div>
+            {% if child.bind_code %}
+            <div class="bind-code-panel">
+                <div class="bind-label">家长绑定码（6 位，请让家长在家庭端输入）</div>
+                <div class="bind-value" id="childBindCodeDisplay">{{ child.bind_code }}</div>
+                <div class="bind-hint">
+                    {% if child.parent_id %}
+                    已与家长账号关联；绑定码仍可让家长核对或告知其他监护人。
+                    {% else %}
+                    尚未绑定家长：请把上方编码告诉家长，在家庭端「家庭与班级」中完成绑定。
+                    {% endif %}
+                </div>
+                <button type="button" class="btn-copy-bind" onclick="copyChildBindCode()">复制绑定码</button>
+            </div>
+            {% endif %}
+        </div>
+        <div class="level-badge">
+            Lv.{{ child.level }} 小勇士
+        </div>
+    </div>
+
+    {% if child.diet_notes %}
+    <div class="parent-notes-card">
+        <h3>家长备注（家庭端维护 · 只读）</h3>
+        <p>{{ child.diet_notes }}</p>
+    </div>
+    {% endif %}
+    {% if child.allergy_tags or child.medical_tags %}
+    <div class="parent-notes-card" style="background:#fce4ec;border-color:#f48fb1;">
+        <h3 style="color:#ad1457;">家长登记的饮食注意（只读）</h3>
+        {% if child.allergy_tags %}
+        <p style="margin:0 0 8px;"><strong>过敏相关：</strong>{% for t in child.allergy_tags %}<span style="display:inline-block;background:#fff;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;">{{ t }}</span>{% endfor %}</p>
+        {% endif %}
+        {% if child.medical_tags %}
+        <p style="margin:0;"><strong>医嘱 / 原则：</strong>{% for t in child.medical_tags %}<span style="display:inline-block;background:#fff;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;">{{ t }}</span>{% endfor %}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if family_health_readonly %}
+    <div class="intake-readonly-card">
+        <h3>每日参考摄入（与家庭端口径一致 · 只读）</h3>
+        {% if family_health_readonly.recommendation %}
+        <p>
+            热量约 <strong>{{ family_health_readonly.recommendation.calories_kcal_min }}–{{ family_health_readonly.recommendation.calories_kcal_max }}</strong> kcal/日，
+            蛋白质约 <strong>{{ family_health_readonly.recommendation.protein_g_min }}–{{ family_health_readonly.recommendation.protein_g_max }}</strong> g/日。
+            {{ family_health_readonly.recommendation.notes }}
+        </p>
+        {% else %}
+        <p style="color:#666;">请家长在家庭端填写<strong>出生日期</strong>后，系统才能按年龄给出参考区间（非医疗诊断）。</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="child-alerts-section" id="sec-child-alerts">
+        <h3>健康预警</h3>
+        <p class="alerts-sub">与家庭端、学校端同源：拍照识别或家长修正餐食时若命中<strong>过敏标签</strong>会在此提示；已读状态仅同步给你本人界面。</p>
+        <div id="childAlertsList"><p style="color:#999;font-size:14px;">加载中…</p></div>
+    </div>
+
+    <div class="warrior-card">
+        <div class="warrior-avatar" onclick="openAvatarModal()"
+            {% if child.avatar == 'warrior' %}style="background: linear-gradient(135deg, #f44336, #ef5350);"
+            {% elif child.avatar == 'princess' %}style="background: linear-gradient(135deg, #e91e63, #f48fb1);"
+            {% elif child.avatar == 'robot' %}style="background: linear-gradient(135deg, #607d8b, #90a4ae);"
+            {% elif child.avatar == 'unicorn' %}style="background: linear-gradient(135deg, #9c27b0, #ba68c8);"
+            {% elif child.avatar == 'dragon' %}style="background: linear-gradient(135deg, #ff5722, #ff8a65);"
+            {% elif child.avatar == 'star' %}style="background: linear-gradient(135deg, #ffc107, #ffca28);"
+            {% elif child.avatar == 'moon' %}style="background: linear-gradient(135deg, #3f51b5, #7986cb);"
+            {% endif %}>
+            {% if child.avatar == 'default' %}
+                <span class="icon icon-user"></span>
+            {% elif child.avatar == 'warrior' %}
+                <span class="icon icon-star"></span>
+            {% elif child.avatar == 'princess' %}
+                <span class="icon icon-heart"></span>
+            {% elif child.avatar == 'robot' %}
+                <span class="icon icon-shield"></span>
+            {% elif child.avatar == 'unicorn' %}
+                <span class="icon icon-star-empty"></span>
+            {% elif child.avatar == 'dragon' %}
+                <span class="icon icon-flame"></span>
+            {% elif child.avatar == 'star' %}
+                <span class="icon icon-crown"></span>
+            {% elif child.avatar == 'moon' %}
+                <span class="icon icon-moon"></span>
+            {% else %}
+                <span class="icon icon-user"></span>
+            {% endif %}
+            <span class="avatar-hover-plus">+</span>
+        </div>
+
+        <div class="warrior-stats">
+            <div class="stats-title">小勇士信息</div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value">{{ child.power }}</div>
+                    <div class="stat-label">当前体力</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ child.power_to_next }}</div>
+                    <div class="stat-label">升级所需</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ child.level }}</div>
+                    <div class="stat-label">勇士等级</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="power-section">
+            <div class="power-title">升级进度</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ progress_percent }}%"></div>
+            </div>
+            <div class="power-text">{{ child.power }} / {{ child.power_to_next }} 体力</div>
+        </div>
+
+        <div class="five-color-section">
+            <div class="power-title">五色宝石</div>
+            <div class="gems-container">
+                <div class="gem gem-red {% if child.gem_red %}active{% endif %}">米</div>
+                <div class="gem gem-yellow {% if child.gem_yellow %}active{% endif %}">肉</div>
+                <div class="gem gem-green {% if child.gem_green %}active{% endif %}">菜</div>
+                <div class="gem gem-blue {% if child.gem_blue %}active{% endif %}">果</div>
+                <div class="gem gem-purple {% if child.gem_purple %}active{% endif %}">奶</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 健康数据区域 -->
+    <div class="health-section" style="background: white; border-radius: 16px; padding: 30px; margin-bottom: 15px; max-width: 800px; margin-left: auto; margin-right: auto;">
+        <h2 class="section-title">手环健康数据</h2>
+        <div id="healthDataSection">
+            <div class="empty-state" style="padding: 20px;">
+                <p style="color: #999;">正在加载健康数据...</p>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+            <button onclick="autoGenerateHealth()" style="background: linear-gradient(135deg, #4CAF50, #81C784); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                自动同步
+            </button>
+            <button onclick="openHealthModal()" style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                手动输入
+            </button>
+        </div>
+    </div>
+
+    <!-- 健康数据录入Modal -->
+    <div class="modal-overlay" id="healthModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <div class="modal-title">📱 手动输入健康数据</div>
+                <button class="modal-close" onclick="closeHealthModal()">&times;</button>
+            </div>
+            <div style="max-height: 70vh; overflow-y: auto;">
+                <div style="padding: 10px 0;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🏃 步数</label>
+                        <input type="number" id="healthSteps" placeholder="今日步数" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🎯 步数目标</label>
+                        <input type="number" id="healthStepGoal" placeholder="目标步数" value="8000" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">⏱️ 活动分钟</label>
+                        <input type="number" id="healthActiveMinutes" placeholder="活动时长(分钟)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🔥 消耗卡路里</label>
+                        <input type="number" id="healthCalories" placeholder="消耗卡路里" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">❤️ 心率 - 平均</label>
+                        <input type="number" id="healthHeartRateAvg" placeholder="平均心率(bpm)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">心率最大</label>
+                            <input type="number" id="healthHeartRateMax" placeholder="最大" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">心率最小</label>
+                            <input type="number" id="healthHeartRateMin" placeholder="最小" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">😴 睡眠时长</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="healthSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <input type="number" id="healthSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">深睡时长</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="healthDeepSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                                <input type="number" id="healthDeepSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">浅睡时长</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="healthLightSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                                <input type="number" id="healthLightSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🌙 REM睡眠时长</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="healthRemSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                            <input type="number" id="healthRemSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <button onclick="submitHealthData()" style="width: 100%; background: linear-gradient(135deg, #4CAF50, #81C784); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                        保存健康数据
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="meal-section">
+        <h2 class="section-title">AI 膳食识别</h2>
+        <div class="meal-upload" onclick="openMealModal()">
+            <div class="meal-upload-icon"><span class="icon icon-camera"></span></div>
+            <div class="meal-upload-text">点击拍照上传餐食</div>
+            <div class="meal-upload-hint">AI将自动识别食材种类并计算营养</div>
+        </div>
+
+        <h3 style="font-size: 14px; color: #666; margin-bottom: 10px;">今日膳食记录</h3>
+        <div class="meal-records">
+            {% for meal in today_meals %}
+            <div class="meal-record">
+                <div class="meal-type">{{ meal.get_meal_type_display }}</div>
+                <div class="meal-score">{{ meal.total_score }}<span>/5分</span></div>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <p>暂无膳食记录，点击上方拍照上传</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="tasks-section">
+        <h2 class="section-title">今日任务</h2>
+        <div class="task-grid">
+            {% for item in daily_records %}
+            <div class="task-card {% if item.status == 'completed' %}completed{% endif %}">
+                <div class="task-icon"><span class="icon icon-bullet"></span></div>
+                <div class="task-details">
+                    <div class="task-name">{{ item.task.name }}</div>
+                    <div class="task-reward">+{{ item.task.power_reward }} 体力</div>
+                </div>
+                <div class="task-action">
+                    {% if item.status == 'pending' %}
+                        <button class="btn-apply" onclick="submitTask({{ item.task.id }})">申请完成</button>
+                    {% elif item.status == 'wait_confirm' %}
+                        <span class="btn-waiting">等待确认</span>
+                    {% elif item.status == 'completed' %}
+                        <span class="btn-completed"><span class="icon icon-check"></span> 已完成</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if active_challenges %}
+    <div class="challenge-section">
+        <h2 class="section-title">进行中的挑战</h2>
+        {% for progress in active_challenges %}
+        <div class="challenge-item">
+            <div class="challenge-icon"><span class="icon icon-trophy"></span></div>
+            <div class="challenge-info">
+                <div class="challenge-title">{{ progress.challenge.title }}</div>
+                <div class="challenge-progress">
+                    当前进度: {{ progress.current_value }} / {{ progress.challenge.target_value }}
+                </div>
+                <div class="challenge-bar">
+                    <div class="challenge-bar-fill" style="width: {{ progress.percent }}%"></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if badges %}
+    <div class="badges-section">
+        <h2 class="section-title">我的徽章</h2>
+        <div class="badges-grid">
+            {% for badge in badges %}
+            <div class="badge-item earned" title="{{ badge.badge.name }}">
+                <span class="icon icon-medal"></span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if encouragements %}
+    <div class="encouragement-section">
+        <h2 class="section-title">家长鼓励</h2>
+        <div class="encouragement-list">
+            {% for enc in encouragements %}
+            <div class="encouragement-item" id="enc-{{ enc.id }}">
+                <div class="encouragement-icon"><span class="icon icon-hand"></span></div>
+                <div class="encouragement-text">{{ enc.message }}</div>
+                <div class="encouragement-time">{{ enc.created_at|date:"H:i" }}</div>
+                <button class="encouragement-close" onclick="closeEncouragement({{ enc.id }})">x</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Meal Upload Modal -->
+<div class="modal-overlay" id="mealModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">AI 膳食识别</div>
+            <button class="modal-close" onclick="closeMealModal()">&times;</button>
+        </div>
+
+        <!-- Upload Options -->
+        <div class="upload-options" id="uploadOptions">
+            <div class="upload-option" onclick="selectPhotoUpload()">
+                <div class="upload-option-icon"><span class="icon icon-image"></span></div>
+                <div class="upload-option-text">从相册选择</div>
+            </div>
+            <div class="upload-option" onclick="startCamera()">
+                <div class="upload-option-icon"><span class="icon icon-camera"></span></div>
+                <div class="upload-option-text">拍照上传</div>
+            </div>
+        </div>
+
+        <!-- Hidden file input -->
+        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(this.files[0])">
+
+        <!-- Camera Preview -->
+        <video id="cameraPreview" autoplay playsinline></video>
+        <canvas id="cameraCanvas" style="display: none;"></canvas>
+        <img id="capturedPhoto" alt="Captured photo">
+
+        <!-- Camera Controls -->
+        <div class="camera-controls" id="cameraControls">
+            <button class="btn-capture" onclick="capturePhoto()">拍照</button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <div>AI 正在识别食材...</div>
+        </div>
+
+        <!-- Analyze Button -->
+        <div style="text-align: center;">
+            <button class="btn-analyze" id="btnAnalyze" onclick="analyzeMeal()">
+                开始分析
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div class="result-section" id="resultSection">
+            <div class="result-title">识别结果</div>
+
+            <div class="food-list" id="foodList"></div>
+
+            <div class="score-display">
+                <div class="score-value" id="scoreValue">0/5</div>
+                <div class="score-label">五色营养评分</div>
+            </div>
+
+            <div class="gems-display" id="gemsDisplay"></div>
+
+            <div class="bonus-message" id="bonusMessage" style="display: none;"></div>
+
+            <div class="nutrition-grid">
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="caloriesValue">0</div>
+                    <div class="nutrition-label">热量 (kcal)</div>
+                </div>
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="proteinValue">0</div>
+                    <div class="nutrition-label">蛋白质 (g)</div>
+                </div>
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="carbValue">0</div>
+                    <div class="nutrition-label">碳水化合物 (g)</div>
+                </div>
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="fatValue">0</div>
+                    <div class="nutrition-label">脂肪 (g)</div>
+                </div>
+            </div>
+
+            <button class="btn-apply" onclick="closeMealModal(); location.reload();">完成</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" style="display: none;"></div>
+
+<!-- 健康数据录入弹窗 -->
+<div id="healthModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; justify-content: center; align-items: center;">
+    <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; max-height: 90vh; overflow-y: auto;">
+        <h3 style="color: #333; margin-bottom: 20px;">📱 录入手环数据</h3>
+        <p style="font-size: 12px; color: #999; margin-bottom: 15px;">打开小米运动健康App，查看今日数据后填写</p>
+
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">🏃 步数</label>
+            <input type="number" id="healthSteps" placeholder="今日步数" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">❤️ 平均心率 (bpm)</label>
+            <input type="number" id="healthHeartRate" placeholder="如：72" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div style="flex: 1;">
+                <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">最高心率</label>
+                <input type="number" id="healthHeartRateMax" placeholder="如：120" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">最低心率</label>
+                <input type="number" id="healthHeartRateMin" placeholder="如：55" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+            </div>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">😴 睡眠时长 (小时)</label>
+            <input type="number" id="healthSleepHours" placeholder="如：8" min="0" max="24" step="0.5" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div style="flex: 1;">
+                <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">深睡 (小时)</label>
+                <input type="number" id="healthDeepSleep" placeholder="如：2" min="0" step="0.5" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 14px; color: #666; display: block; margin-bottom: 5px;">浅睡 (小时)</label>
+                <input type="number" id="healthLightSleep" placeholder="如：5" min="0" step="0.5" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+            <button onclick="closeHealthModal()" style="padding: 12px 24px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-size: 14px;">取消</button>
+            <button onclick="submitHealthData()" style="padding: 12px 24px; border: none; border-radius: 8px; background: #4CAF50; color: white; cursor: pointer; font-size: 14px;">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 头像选择Modal -->
+<div id="avatarModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; justify-content: center; align-items: center;">
+    <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; text-align: center;">
+        <h3 style="color: #333; margin-bottom: 20px;">选择头像</h3>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+            <div class="avatar-option" data-avatar="default" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4CAF50, #81C784); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-user"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="warrior" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f44336, #ef5350); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-star"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="princess" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #e91e63, #f48fb1); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-heart"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="robot" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #607d8b, #90a4ae); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-shield"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="unicorn" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #9c27b0, #ba68c8); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-star-empty"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="dragon" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff5722, #ff8a65); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-flame"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="star" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ffc107, #ffca28); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-crown"></span>
+                </div>
+            </div>
+            <div class="avatar-option" data-avatar="moon" onclick="selectAvatar(this)">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #3f51b5, #7986cb); display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 30px; cursor: pointer; border: 3px solid transparent;">
+                    <span class="icon icon-moon"></span>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button onclick="closeAvatarModal()" style="padding: 10px 30px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer;">取消</button>
+            <button onclick="confirmAvatar()" style="padding: 10px 30px; border: none; border-radius: 8px; background: #4CAF50; color: white; cursor: pointer;">确认</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let mediaStream = null;
+let currentImageFile = null;
+let selectedAvatar = '';
+
+function openAvatarModal() {
+    document.getElementById('avatarModal').style.display = 'flex';
+    selectedAvatar = '{{ child.avatar }}';
+    document.querySelectorAll('.avatar-option').forEach(opt => {
+        opt.querySelector('div').style.borderColor = opt.dataset.avatar === selectedAvatar ? '#4CAF50' : 'transparent';
+    });
+}
+
+function closeAvatarModal() {
+    document.getElementById('avatarModal').style.display = 'none';
+}
+
+function selectAvatar(el) {
+    document.querySelectorAll('.avatar-option div').forEach(div => div.style.borderColor = 'transparent');
+    el.querySelector('div').style.borderColor = '#4CAF50';
+    selectedAvatar = el.dataset.avatar;
+}
+
+function confirmAvatar() {
+    if (!selectedAvatar) {
+        showToast('请选择头像');
+        return;
+    }
+    fetch('/child/update-avatar/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `avatar=${selectedAvatar}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message);
+        if (data.success) {
+            setTimeout(() => location.reload(), 1000);
+        }
+    });
+    closeAvatarModal();
+}
+
+// 头像点击事件
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 2000);
+}
+
+function submitTask(taskId) {
+    fetch(`/child/submit-task/${taskId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message);
+            location.reload();
+        } else {
+            showToast(data.message);
+        }
+    });
+}
+
+function copyChildBindCode() {
+    const el = document.getElementById('childBindCodeDisplay');
+    if (!el) return;
+    const code = el.textContent.trim();
+    if (!code) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(() => showToast('已复制到剪贴板')).catch(() => fallbackCopy(code));
+    } else {
+        fallbackCopy(code);
+    }
+}
+
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showToast('已复制到剪贴板');
+    } catch (e) {
+        showToast('复制失败，请手动长按选择');
+    }
+    document.body.removeChild(ta);
+}
+
+function closeEncouragement(id) {
+    fetch(`/child/encouragement/${id}/read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(() => {
+        document.getElementById('enc-' + id).style.display = 'none';
+    });
+}
+
+// Modal functions
+function openMealModal() {
+    document.getElementById('mealModal').classList.add('active');
+    resetMealModal();
+}
+
+function closeMealModal() {
+    stopCamera();
+    document.getElementById('mealModal').classList.remove('active');
+}
+
+function resetMealModal() {
+    document.getElementById('uploadOptions').style.display = 'flex';
+    document.getElementById('cameraPreview').style.display = 'none';
+    document.getElementById('capturedPhoto').style.display = 'none';
+    document.getElementById('cameraControls').style.display = 'none';
+    document.getElementById('loadingSpinner').style.display = 'none';
+    document.getElementById('btnAnalyze').style.display = 'none';
+    document.getElementById('resultSection').style.display = 'none';
+    currentImageFile = null;
+}
+
+function selectPhotoUpload() {
+    document.getElementById('photoInput').click();
+}
+
+function handlePhotoSelect(file) {
+    if (!file) return;
+    currentImageFile = file;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById('capturedPhoto');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        document.getElementById('uploadOptions').style.display = 'none';
+        document.getElementById('cameraControls').style.display = 'none';
+        document.getElementById('btnAnalyze').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function startCamera() {
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+        });
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = mediaStream;
+        video.style.display = 'block';
+        document.getElementById('uploadOptions').style.display = 'none';
+        document.getElementById('cameraControls').style.display = 'block';
+        document.getElementById('capturedPhoto').style.display = 'none';
+    } catch (err) {
+        showToast('无法访问摄像头，请检查权限设置');
+        console.error(err);
+    }
+}
+
+function stopCamera() {
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+    }
+}
+
+function capturePhoto() {
+    const video = document.getElementById('cameraPreview');
+    const canvas = document.getElementById('cameraCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+        currentImageFile = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+        const img = document.getElementById('capturedPhoto');
+        img.src = URL.createObjectURL(blob);
+        img.style.display = 'block';
+
+        stopCamera();
+        video.style.display = 'none';
+        document.getElementById('cameraControls').style.display = 'none';
+        document.getElementById('btnAnalyze').style.display = 'block';
+    }, 'image/jpeg', 0.9);
+}
+
+function analyzeMeal() {
+    if (!currentImageFile) {
+        showToast('请先上传图片');
+        return;
+    }
+
+    document.getElementById('btnAnalyze').style.display = 'none';
+    document.getElementById('loadingSpinner').style.display = 'block';
+
+    const formData = new FormData();
+    formData.append('meal_type', 'lunch');
+    formData.append('image', currentImageFile);
+
+    fetch('/api/yolo/recognize/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loadingSpinner').style.display = 'none';
+
+        if (data.success) {
+            displayResults(data);
+        } else {
+            showToast(data.message || '识别失败，请重试');
+            resetMealModal();
+        }
+    })
+    .catch(err => {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        showToast('上传失败，请重试');
+        resetMealModal();
+    });
+}
+
+function displayResults(data) {
+    document.getElementById('resultSection').style.display = 'block';
+
+    // Food list
+    const foodList = document.getElementById('foodList');
+    foodList.innerHTML = '';
+    data.foods.forEach(food => {
+        const tag = document.createElement('div');
+        tag.className = 'food-tag';
+        tag.textContent = food.name;
+        foodList.appendChild(tag);
+    });
+
+    // Score
+    document.getElementById('scoreValue').textContent = data.score + '/5';
+
+    // Gems
+    const gemsDisplay = document.getElementById('gemsDisplay');
+    gemsDisplay.innerHTML = '';
+    const gemColors = ['red', 'yellow', 'green', 'blue', 'purple'];
+    const gemLabels = ['米', '肉', '菜', '果', '奶'];
+    gemColors.forEach((color, i) => {
+        const gem = document.createElement('div');
+        gem.className = `gem gem-${color} ${data.gems[color] ? 'active' : ''}`;
+        gem.textContent = gemLabels[i];
+        gemsDisplay.appendChild(gem);
+    });
+
+    // Bonus message
+    if (data.five_color_bonus > 0) {
+        document.getElementById('bonusMessage').style.display = 'block';
+        document.getElementById('bonusMessage').textContent = '🎉 五色满分！获得额外 ' + data.five_color_bonus + ' 体力奖励！';
+    } else {
+        document.getElementById('bonusMessage').style.display = 'none';
+    }
+
+    // Nutrition
+    if (data.nutrition) {
+        document.getElementById('caloriesValue').textContent = data.nutrition.calories;
+        document.getElementById('proteinValue').textContent = data.nutrition.protein;
+        document.getElementById('carbValue').textContent = data.nutrition.carbohydrate;
+        document.getElementById('fatValue').textContent = data.nutrition.fat;
+    }
+}
+
+// 健康数据录入弹窗
+function openHealthModal() {
+    document.getElementById('healthModal').classList.add('active');
+}
+
+function closeHealthModal() {
+    document.getElementById('healthModal').classList.remove('active');
+}
+
+function submitHealthData() {
+    const steps = document.getElementById('healthSteps').value;
+    const stepGoal = document.getElementById('healthStepGoal').value;
+    const activeMinutes = document.getElementById('healthActiveMinutes').value;
+    const calories = document.getElementById('healthCalories').value;
+    const heartRateAvg = document.getElementById('healthHeartRateAvg').value;
+    const heartRateMax = document.getElementById('healthHeartRateMax').value;
+    const heartRateMin = document.getElementById('healthHeartRateMin').value;
+    const sleepHours = document.getElementById('healthSleepHours').value;
+    const sleepMinutes = document.getElementById('healthSleepMinutes').value;
+    const deepSleepHours = document.getElementById('healthDeepSleepHours').value;
+    const deepSleepMinutes = document.getElementById('healthDeepSleepMinutes').value;
+    const lightSleepHours = document.getElementById('healthLightSleepHours').value;
+    const lightSleepMinutes = document.getElementById('healthLightSleepMinutes').value;
+    const remSleepHours = document.getElementById('healthRemSleepHours').value;
+    const remSleepMinutes = document.getElementById('healthRemSleepMinutes').value;
+
+    if (!steps && !heartRateAvg && !sleepHours) {
+        showToast('请至少填写一项数据');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('steps', steps || 0);
+    formData.append('step_goal', stepGoal || 8000);
+    formData.append('active_minutes', activeMinutes || 0);
+    formData.append('calories_burned', calories || 0);
+    formData.append('heart_rate_avg', heartRateAvg || 0);
+    formData.append('heart_rate_max', heartRateMax || 0);
+    formData.append('heart_rate_min', heartRateMin || 0);
+    formData.append('sleep_hours', sleepHours || 0);
+    formData.append('sleep_minutes', sleepMinutes || 0);
+    formData.append('deep_sleep_hours', deepSleepHours || 0);
+    formData.append('deep_sleep_minutes', deepSleepMinutes || 0);
+    formData.append('light_sleep_hours', lightSleepHours || 0);
+    formData.append('light_sleep_minutes', lightSleepMinutes || 0);
+    formData.append('rem_sleep_hours', remSleepHours || 0);
+    formData.append('rem_sleep_minutes', remSleepMinutes || 0);
+
+    fetch('/api/health/manual-input/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            showToast('数据已保存！');
+            closeHealthModal();
+            loadHealthData();
+        } else {
+            showToast(res.message || '保存失败');
+        }
+    })
+    .catch(err => {
+        showToast('保存失败，请重试');
+    });
+}
+
+// 自动生成健康数据
+function autoGenerateHealth() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '同步中...';
+
+    // 等待5秒后再调用API
+    setTimeout(() => {
+        fetch('/api/health/auto-generate/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                showToast('已生成今日健康数据！');
+                loadHealthData();
+            } else {
+                showToast(res.message || '生成失败');
+            }
+        })
+        .catch(err => {
+            showToast('生成失败，请重试');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '自动同步';
+        });
+    }, 5000);
+}
+
+// 健康数据相关
+let healthRefreshInterval = null;
+
+function loadHealthData() {
+    fetch('/api/health/today/')
+    .then(r => r.json())
+    .then(data => {
+        const section = document.getElementById('healthDataSection');
+        if (data.success && data.data) {
+            const d = data.data;
+            section.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div class="stat-box">
+                        <div class="stat-value" style="font-size: 32px;">${d.steps}</div>
+                        <div class="stat-label">步数</div>
+                        <div style="font-size: 12px; color: ${d.step_percent >= 100 ? '#4CAF50' : '#999'}; margin-top: 5px;">目标: ${d.step_goal} (${d.step_percent}%)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #e91e63;">${d.heart_rate_avg || '--'}</div>
+                        <div class="stat-label">平均心率</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 5px;">${d.heart_rate_min || '--'}-${d.heart_rate_max || '--'} bpm</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #9C27B0;">${Math.floor((d.sleep_duration_minutes || 0) / 60)}h${(d.sleep_duration_minutes || 0) % 60}m</div>
+                        <div class="stat-label">睡眠时长</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 5px;">深睡${Math.floor((d.deep_sleep_minutes || 0) / 60)}h${(d.deep_sleep_minutes || 0) % 60}m</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #4CAF50;">🏃 ${d.active_minutes || 0}分钟</div>
+                        <div style="font-size: 12px; color: #666;">活动</div>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #FF9800;">🔥 ${d.calories_burned || 0} kcal</div>
+                        <div style="font-size: 12px; color: #666;">消耗</div>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #2196F3;">😴 ${Math.floor((d.light_sleep_minutes || 0) / 60)}h${(d.light_sleep_minutes || 0) % 60}m</div>
+                        <div style="font-size: 12px; color: #666;">浅睡</div>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 10px 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #9C27B0;">🌙 ${Math.floor((d.rem_sleep_minutes || 0) / 60)}h${(d.rem_sleep_minutes || 0) % 60}m</div>
+                        <div style="font-size: 12px; color: #666;">REM</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #999;">
+                    最后同步: ${d.last_sync ? new Date(d.last_sync).toLocaleTimeString() : '未知'}
+                    <button onclick="loadHealthData()" style="margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #f0f0f0; border: none; border-radius: 4px; cursor: pointer;">刷新</button>
+                </div>
+            `;
+        } else {
+            section.innerHTML = `
+                <div class="empty-state" style="padding: 20px;">
+                    <div style="font-size: 36px; margin-bottom: 10px;">⌚</div>
+                    <p style="color: #999;">暂无手环数据</p>
+                    <p style="font-size: 12px; color: #ccc; margin-top: 5px;">请在手机App中同步手环数据</p>
+                </div>
+            `;
+        }
+    })
+    .catch(err => {
+        document.getElementById('healthDataSection').innerHTML = `
+            <div class="empty-state" style="padding: 20px;">
+                <p style="color: #f44336;">加载失败</p>
+            </div>
+        `;
+    });
+}
+
+function escapeHtmlChild(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function loadChildAlerts() {
+    const host = document.getElementById('childAlertsList');
+    if (!host) return;
+    fetch('/child/alerts/?limit=30')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                host.innerHTML = '<p style="color:#999">' + escapeHtmlChild(data.message || '无法加载') + '</p>';
+                return;
+            }
+            if (!data.alerts || !data.alerts.length) {
+                host.innerHTML = '<p style="color:#999;font-size:14px;">暂无预警。好好吃饭，继续加油～</p>';
+                return;
+            }
+            let html = '';
+            data.alerts.forEach(a => {
+                const read = a.is_read ? ' read' : '';
+                const med = (a.type === 'medical') ? ' medical' : '';
+                const btn = a.is_read ? '' : '<button type="button" class="btn-apply" style="margin-top:8px;padding:6px 14px;font-size:13px;" onclick="markChildAlertRead(' + a.id + ')">标记已读</button>';
+                html += '<div class="child-alert-row' + read + med + '" data-aid="' + a.id + '">' +
+                    '<div class="child-alert-meta">' + escapeHtmlChild(a.created_at) + ' · ' + (a.type === 'allergy' ? '过敏' : '医嘱') + '</div>' +
+                    '<div style="font-weight:600;color:#333;">' + escapeHtmlChild(a.title) + '</div>' +
+                    '<div style="margin-top:6px;color:#444;line-height:1.5;">' + escapeHtmlChild(a.message) + '</div>' + btn + '</div>';
+            });
+            host.innerHTML = html;
+        })
+        .catch(() => { host.innerHTML = '<p style="color:#f44336;font-size:14px;">加载失败</p>'; });
+}
+
+function markChildAlertRead(id) {
+    fetch('/child/alerts/' + id + '/read/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) return;
+        const row = document.querySelector('.child-alert-row[data-aid="' + id + '"]');
+        if (row) {
+            row.classList.add('read');
+            const b = row.querySelector('button');
+            if (b) b.remove();
+        }
+    });
+}
+
+// 页面加载时获取健康数据
+document.addEventListener('DOMContentLoaded', function() {
+    loadHealthData();
+    loadChildAlerts();
+    // 每30秒自动刷新健康数据
+    healthRefreshInterval = setInterval(loadHealthData, 30000);
+});
+
+// 页面离开时清除定时器
+window.addEventListener('beforeunload', function() {
+    if (healthRefreshInterval) {
+        clearInterval(healthRefreshInterval);
+    }
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endif %}
+{% endblock %}

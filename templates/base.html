@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}小勇士健康管理系统{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Layout */
+        .layout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-logo {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header-nav {
+            display: flex;
+            gap: 8px;
+        }
+        .header-nav a {
+            color: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .header-nav a:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .header-logout {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .header-logout:hover {
+            background: rgba(255,255,255,0.3);
+            text-decoration: none;
+        }
+
+        .main {
+            flex: 1;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .footer {
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+            padding: 16px 24px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Page Header */
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .page-header h1 {
+            font-size: 24px;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        .page-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .card-body {
+            color: #555;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            gap: 24px;
+        }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #1a88d6;
+        }
+        .btn-warning {
+            background: #FF9800;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #e68900;
+        }
+        .btn-outline {
+            background: white;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+        .btn-outline:hover {
+            background: #f5f5f5;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 16px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .table th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #333;
+        }
+        .table tr:hover {
+            background: #fafafa;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-success { background: #e8f5e9; color: #2e7d32; }
+        .badge-warning { background: #fff3e0; color: #ef6c00; }
+        .badge-info { background: #e3f2fd; color: #1565c0; }
+        .badge-danger { background: #ffebee; color: #c62828; }
+
+        /* Stat Cards */
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .stat-label {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .stat-change {
+            font-size: 12px;
+            color: #4CAF50;
+            margin-top: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .grid-3, .grid-2 { grid-template-columns: 1fr; }
+            .header-nav { display: none; }
+            .main { padding: 16px; }
+        }
+
+        /* Icon styles */
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1em;
+            height: 1em;
+            font-style: normal;
+        }
+        .icon-star::before { content: "\2605"; color: #FFD700; }
+        .icon-check::before { content: "\2713"; color: #4CAF50; }
+        .icon-cross::before { content: "\2717"; color: #999; }
+        .icon-plus::before { content: "\2715"; color: #2196F3; }
+        .icon-arrow::before { content: "\2192"; }
+        .icon-arrow-left::before { content: "\2190"; }
+        .icon-arrow-up::before { content: "\2191"; }
+        .icon-arrow-down::before { content: "\2193"; }
+        .icon-bullet::before { content: "\25CF"; font-size: 0.5em; vertical-align: middle; }
+        .icon-circle::before { content: "\25CB"; }
+        .icon-square::before { content: "\25A0"; }
+        .icon-triangle::before { content: "\25B2"; }
+        .icon-warning::before { content: "\26A0"; color: #FF9800; }
+        .icon-info::before { content: "\24D8"; color: #2196F3; }
+        .icon-child::before { content: "\2640"; }
+        .icon-parent::before { content: "\2641"; }
+        .icon-school::before { content: "\2302"; }
+        .icon-male::before { content: "\2642"; }
+        .icon-female::before { content: "\2640"; }
+        .icon-crown::before { content: "\265A"; color: #FFD700; }
+        .icon-sword::before { content: "\2694"; color: #666; }
+        .icon-trophy::before { content: "\265B"; color: #FFD700; }
+        .icon-medal::before { content: "\265C"; color: #FFA500; }
+        .icon-target::before { content: "\25CE"; color: #9C27B0; }
+        .icon-flame::before { content: "\2632"; color: #ff6b6b; }
+        .icon-leaf::before { content: "\2618"; color: #4CAF50; }
+        .icon-drop::before { content: "\2619"; color: #2196F3; }
+        .icon-sun::before { content: "\2600"; color: #FFA500; }
+        .icon-moon::before { content: "\263D"; color: #9C27B0; }
+        .icon-hand::before { content: "\261E"; color: #4CAF50; }
+        .icon-food::before { content: "\261F"; }
+        .icon-meat::before { content: "\2630"; color: #d32f2f; }
+        .icon-veg::before { content: "\2618"; color: #4CAF50; }
+        .icon-fruit::before { content: "\2619"; color: #ff9800; }
+        .icon-milk::before { content: "\2619"; color: #e1bee7; }
+        .icon-grain::before { content: "\2606"; color: #ffeb3b; }
+        .icon-bed::before { content: "\263F"; color: #3f51b5; }
+        .icon-run::before { content: "\21BB"; color: #4CAF50; }
+        .icon-wash::before { content: "\2618"; color: #00bcd4; }
+        .icon-camera::before { content: "\2316"; color: #666; }
+        .icon-upload::before { content: "\2913"; color: #4CAF50; }
+        .icon-download::before { content: "\2915"; color: #2196F3; }
+        .icon-lock::before { content: "\26BF"; color: #666; }
+        .icon-key::before { content: "\26B7"; color: #FFA500; }
+        .icon-book::before { content: "\261F"; color: #795548; }
+        .icon-chart::before { content: "\2261"; color: #2196F3; }
+        .icon-fire::before { content: "\2600"; color: #ff5722; }
+        .icon-ice::before { content: "\2744"; color: #00bcd4; }
+        .icon-home::before { content: "\2302"; }
+        .icon-user::before { content: "\263A"; }
+        .icon-users::before { content: "\263B"; }
+        .icon-clock::before { content: "\231A"; color: #666; }
+        .icon-calendar::before { content: "\261F"; color: #666; }
+        .icon-mail::before { content: "\2709"; color: #2196F3; }
+        .icon-edit::before { content: "\270E"; color: #666; }
+        .icon-trash::before { content: "\2715"; color: #f44336; }
+        .icon-save::before { content: "\2714"; color: #4CAF50; }
+        .icon-settings::before { content: "\2699"; color: #666; }
+        .icon-search::before { content: "\2315"; color: #666; }
+        .icon-menu::before { content: "\2630"; color: #666; }
+        .icon-card::before { content: "\25A0"; border: 2px solid currentColor; padding: 2px; }
+        .icon-shield::before { content: "\26E8"; color: #9C27B0; }
+        .icon-flag::before { content: "\2691"; color: #f44336; }
+        .icon-bell::before { content: "\2363"; color: #FF9800; }
+        .icon-heart::before { content: "\2665"; color: #e91e63; }
+        .icon-star-empty::before { content: "\2606"; color: #ccc; }
+        .icon-plus-circle::before { content: "\2295"; color: #4CAF50; }
+        .icon-minus-circle::before { content: "\2296"; color: #f44336; }
+        .icon-forward::before { content: "\23D8"; }
+        .icon-back::before { content: "\23D7"; }
+        .icon-play::before { content: "\25B6"; color: #4CAF50; }
+        .icon-pause::before { content: "\23F8"; color: #FF9800; }
+        .icon-stop::before { content: "\25A0"; color: #f44336; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="layout">
+        {% block header %}
+        <header class="header">
+            <div class="header-left">
+                <div class="header-logo">
+                    <span class="icon icon-leaf" style="font-size: 28px;"></span>
+                    小勇士健康管理系统
+                </div>
+                <nav class="header-nav">
+                    {% if user.is_authenticated %}
+                        {% if user.children.exists %}
+                        <a href="{% url 'parent_dashboard' %}">家长端</a>
+                        {% endif %}
+                        {% if teacher_count %}
+                        <a href="{% url 'school_dashboard' %}">学校端</a>
+                        {% endif %}
+                    {% endif %}
+                </nav>
+            </div>
+            <div class="header-right">
+                {% if user.is_authenticated %}
+                <div class="header-user">
+                    <span class="icon icon-user"></span>
+                    {{ user.username }}
+                </div>
+                <a href="{% url 'logout' %}" class="header-logout">退出</a>
+                {% else %}
+                <a href="{% url 'login' %}">登录</a>
+                {% endif %}
+            </div>
+        </header>
+        {% endblock %}
+
+        <main class="main">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% block footer %}
+        <footer class="footer">
+            <p>小勇士健康管理系统 &copy; 2024</p>
+        </footer>
+        {% endblock %}
+    </div>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}绑定儿童 - 童视智圈{% endblock %}
+
+{% block extra_css %}
+<style>
+.bind-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #a8c0ff 0%, #cfdef3 100%);
+    padding: 24px;
+}
+.bind-card {
+    background: white;
+    border-radius: 24px;
+    padding: 48px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(90, 111, 168, 0.2);
+    text-align: center;
+}
+.bind-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+}
+.bind-icon .icon {
+    font-size: 40px;
+    color: white;
+}
+.bind-title {
+    font-size: 28px;
+    color: #5a6fa8;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+.bind-desc {
+    color: #8898b8;
+    font-size: 15px;
+    margin-bottom: 32px;
+    line-height: 1.6;
+}
+.bind-form {
+    margin-bottom: 24px;
+}
+.bind-input {
+    width: 100%;
+    padding: 16px;
+    border: 2px solid #dde4f0;
+    border-radius: 12px;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    transition: border-color 0.2s;
+}
+.bind-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+.bind-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.2s;
+}
+.bind-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+.bind-hint {
+    color: #8898b8;
+    font-size: 13px;
+    margin-top: 20px;
+}
+.bind-hint a {
+    color: #667eea;
+    text-decoration: none;
+}
+.result-message {
+    padding: 16px;
+    border-radius: 12px;
+    margin-top: 16px;
+    font-size: 14px;
+}
+.result-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.result-error {
+    background: #ffebee;
+    color: #c62828;
+}
+</style>
+{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="bind-page">
+    <div class="bind-card">
+        <div class="bind-icon"><span class="icon icon-link"></span></div>
+        <h1 class="bind-title">绑定儿童</h1>
+        <p class="bind-desc">请输入儿童端提供的6位绑定码<br>将孩子绑定到您的账户</p>
+
+        <div class="bind-form">
+            <input type="text" id="bindCode" class="bind-input" placeholder="绑定码" maxlength="6" autocomplete="off">
+            <button class="bind-btn" onclick="doBind()">确认绑定</button>
+        </div>
+
+        <div id="result" class="result-message" style="display: none;"></div>
+
+        <p class="bind-hint">
+            还没有绑定码？<br>
+            请让您的孩子在儿童端查看绑定码
+        </p>
+    </div>
+</div>
+
+<script>
+function doBind() {
+    const code = document.getElementById('bindCode').value.trim().toUpperCase();
+    if (!code) {
+        showResult('请输入绑定码', false);
+        return;
+    }
+    if (code.length !== 6) {
+        showResult('绑定码必须是6位', false);
+        return;
+    }
+
+    fetch('/parent/bind-child/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `bind_code=${encodeURIComponent(code)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        showResult(data.message, data.success);
+        if (data.success) {
+            setTimeout(() => window.location.href = '/parent/', 1500);
+        }
+    });
+}
+
+function showResult(msg, success) {
+    const el = document.getElementById('result');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.className = 'result-message ' + (success ? 'result-success' : 'result-error');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
