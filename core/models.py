@@ -332,6 +332,14 @@ class Recipe(models.Model):
     target_nutrients = models.CharField(max_length=100, blank=True, verbose_name='补充营养')
     image_url = models.CharField(max_length=200, blank=True, verbose_name='食谱图片')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recipes_created',
+        verbose_name='由家长创建',
+    )
 
     class Meta:
         verbose_name = '食谱'

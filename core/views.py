@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.db.models import Count, Q, Sum
 from datetime import timedelta
 from .models import (
@@ -814,6 +815,7 @@ def parent_dashboard(request):
 
     return render(request, 'parent/dashboard.html', {
         'child': child,
+        'child_age_years': child.age_years(),
         'children': children,
         'pending_tasks': pending_tasks,
         'week_completed': week_completed,
@@ -1133,6 +1135,45 @@ def parent_child_diet_notes(request):
 
 @login_required
 @require_http_methods(["POST"])
+def parent_child_birth_date(request):
+    """保存当前选中孩子的出生日期（仅家庭端维护；年龄由此推算）。"""
+    child, _children = _parent_resolve_child(request)
+    if not child:
+        return JsonResponse({'success': False, 'message': '未找到孩子信息'})
+
+    raw = (request.POST.get('birth_date') or '').strip()
+    if not raw:
+        child.birth_date = None
+        child.save(update_fields=['birth_date'])
+        return JsonResponse({
+            'success': True,
+            'message': '已清空出生日期',
+            'birth_date': None,
+            'age_years': None,
+        })
+
+    d = parse_date(raw)
+    if not d:
+        return JsonResponse({'success': False, 'message': '日期格式无效，请使用 YYYY-MM-DD'})
+
+    today = timezone.now().date()
+    if d > today:
+        return JsonResponse({'success': False, 'message': '出生日期不能晚于今天'})
+    if (today.year - d.year) > 25:
+        return JsonResponse({'success': False, 'message': '出生日期过早，请核对'})
+
+    child.birth_date = d
+    child.save(update_fields=['birth_date'])
+    return JsonResponse({
+        'success': True,
+        'message': '已保存',
+        'birth_date': d.isoformat(),
+        'age_years': child.age_years(),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
 def parent_child_health_tags(request):
     """保存当前选中孩子的结构化标签（过敏、医嘱）。"""
     import json
@@ -1241,13 +1282,14 @@ def parent_recipes(request):
     child, _children = _parent_resolve_child(request)
     target_nutrient = (request.GET.get('target') or '').strip()
     fill_gaps = request.GET.get('fill_gaps') == '1'
+    limit = max(1, min(80, int(request.GET.get('limit', 30))))
 
-    recipes = Recipe.objects.all().order_by('-id')
+    recipes = Recipe.objects.select_related('created_by').all()
 
     if fill_gaps and child:
         q = Q()
         if not child.gem_red:
-            for kw in ('谷', '主食', '谷物', '杂粮', '米', '面', '薯'):
+            for kw in ('谷', '主食', '谷物', '杂粮', '米', '面', '薯', '燕麦', '饭', '粥', '玉米'):
                 q |= (
                     Q(target_nutrients__icontains=kw)
                     | Q(name__icontains=kw)
@@ -1255,7 +1297,7 @@ def parent_recipes(request):
                     | Q(ingredients__icontains=kw)
                 )
         if not child.gem_yellow:
-            for kw in ('蛋白', '肉', '鱼', '虾', '豆', '蛋', '鸡', '牛'):
+            for kw in ('蛋白', '肉', '鱼', '虾', '豆', '蛋', '鸡', '牛', '排骨', '鸡胸', '鲈鱼'):
                 q |= (
                     Q(target_nutrients__icontains=kw)
                     | Q(name__icontains=kw)
@@ -1263,7 +1305,7 @@ def parent_recipes(request):
                     | Q(ingredients__icontains=kw)
                 )
         if not child.gem_green:
-            for kw in ('蔬菜', '菜', '叶', '纤维', '维生素'):
+            for kw in ('蔬菜', '菜', '叶', '纤维', '维生素', '西兰花', '菠菜', '黄瓜', '青菜'):
                 q |= (
                     Q(target_nutrients__icontains=kw)
                     | Q(name__icontains=kw)
@@ -1271,7 +1313,7 @@ def parent_recipes(request):
                     | Q(ingredients__icontains=kw)
                 )
         if not child.gem_blue:
-            for kw in ('水果', '果', '维C', '浆果'):
+            for kw in ('水果', '果', '维C', '浆果', '苹果', '香蕉', '橙'):
                 q |= (
                     Q(target_nutrients__icontains=kw)
                     | Q(name__icontains=kw)
@@ -1279,7 +1321,7 @@ def parent_recipes(request):
                     | Q(ingredients__icontains=kw)
                 )
         if not child.gem_purple:
-            for kw in ('奶', '乳', '钙', '酸奶', '芝士'):
+            for kw in ('奶', '乳', '钙', '酸奶', '芝士', '牛奶'):
                 q |= (
                     Q(target_nutrients__icontains=kw)
                     | Q(name__icontains=kw)
@@ -1299,6 +1341,36 @@ def parent_recipes(request):
             | Q(ingredients__icontains=target_nutrient)
         ).distinct()
 
+    def _gap_score(r):
+        if not child:
+            return 0
+        t = f"{r.name}\n{r.description}\n{r.ingredients}\n{r.target_nutrients or ''}"
+        s = 0
+        if not child.gem_red and any(k in t for k in ('谷', '主食', '谷物', '杂粮', '米', '面', '薯', '燕麦', '饭', '粥', '玉米')):
+            s += 1
+        if not child.gem_yellow and any(k in t for k in ('蛋白', '肉', '鱼', '虾', '豆', '蛋', '鸡', '牛', '排骨', '鸡胸', '鲈鱼')):
+            s += 1
+        if not child.gem_green and any(k in t for k in ('蔬菜', '菜', '叶', '纤维', '维生素', '西兰花', '菠菜', '黄瓜', '青菜')):
+            s += 1
+        if not child.gem_blue and any(k in t for k in ('水果', '果', '维C', '浆果', '苹果', '香蕉', '橙')):
+            s += 1
+        if not child.gem_purple and any(k in t for k in ('奶', '乳', '钙', '酸奶', '芝士', '牛奶')):
+            s += 1
+        return s
+
+    if fill_gaps and child:
+        pool = list(recipes[: max(limit * 4, 60)])
+        pool.sort(
+            key=lambda r: (
+                -_gap_score(r),
+                0 if r.created_by_id is None else 1,
+                r.name,
+            )
+        )
+        recipes = pool[:limit]
+    else:
+        recipes = list(recipes.order_by('-id')[:limit])
+
     return JsonResponse({
         'success': True,
         'recipes': [{
@@ -1312,7 +1384,73 @@ def parent_recipes(request):
             'carbohydrate': r.carbohydrate,
             'fat': r.fat,
             'target_nutrients': r.target_nutrients,
-        } for r in recipes[:10]]
+            'is_family_recipe': bool(r.created_by_id),
+            'created_by': r.created_by.username if r.created_by_id else None,
+            'gap_match_score': _gap_score(r) if child else 0,
+        } for r in recipes]
+    })
+
+
+def parent_recipe_create(request):
+    """家长添加自定义食谱（写入 Recipe，全端可见）。"""
+    from .recipe_nutrition_estimate import estimate_from_ingredients_text
+
+    if not is_parent(request.user):
+        return JsonResponse({'success': False, 'message': '仅限家长账号添加食谱'}, status=403)
+
+    name = (request.POST.get('name') or '').strip()
+    ingredients = (request.POST.get('ingredients') or '').strip()
+    if not name or not ingredients:
+        return JsonResponse({'success': False, 'message': '请填写食谱名称与食材清单'})
+
+    if len(name) > 100:
+        return JsonResponse({'success': False, 'message': '食谱名称过长'})
+    if len(ingredients) > 2000:
+        return JsonResponse({'success': False, 'message': '食材清单过长'})
+    description = (request.POST.get('description') or '').strip()[:2000]
+    steps = (request.POST.get('steps') or '').strip()[:5000]
+    target_nutrients = (request.POST.get('target_nutrients') or '').strip()[:100]
+    suitable_for = (request.POST.get('suitable_for') or '家庭端添加').strip()[:50]
+
+    est = estimate_from_ingredients_text(ingredients)
+    if not target_nutrients:
+        target_nutrients = est.get('suggested_target_nutrients', '')[:100]
+
+    if Recipe.objects.filter(name=name).exists():
+        return JsonResponse({'success': False, 'message': '已存在同名食谱，请换个名称'})
+
+    recipe = Recipe.objects.create(
+        name=name,
+        description=description,
+        ingredients=ingredients,
+        steps=steps,
+        calories=est['calories'],
+        protein=est['protein'],
+        carbohydrate=est['carbohydrate'],
+        fat=est['fat'],
+        suitable_for=suitable_for,
+        target_nutrients=target_nutrients,
+        created_by=request.user,
+    )
+
+    return JsonResponse({
+        'success': True,
+        'message': '食谱已添加（营养已由食材清单自动估算）',
+        'nutrition_estimate': est,
+        'recipe': {
+            'id': recipe.id,
+            'name': recipe.name,
+            'description': recipe.description,
+            'ingredients': recipe.ingredients,
+            'steps': recipe.steps,
+            'calories': recipe.calories,
+            'protein': recipe.protein,
+            'carbohydrate': recipe.carbohydrate,
+            'fat': recipe.fat,
+            'target_nutrients': recipe.target_nutrients,
+            'is_family_recipe': True,
+            'created_by': request.user.username,
+        },
     })
 
 
@@ -1834,6 +1972,11 @@ def admin_setup(request):
             ('番茄炒蛋', '家常美味，营养丰富', '番茄、鸡蛋、葱花', '1.番茄切块，鸡蛋打散\n2.热油炒蛋\n3.加入番茄翻炒', 120, 10, 8, 6, '6-12岁儿童', '维生素C、蛋白质'),
             ('青菜肉末粥', '易消化，养肠胃', '青菜、瘦肉、大米', '1.大米煮粥\n2.瘦肉切末\n3.青菜切碎\n4.加入粥中煮', 150, 8, 12, 5, '6-8岁儿童', '膳食纤维、蛋白质'),
             ('水果沙拉', '维生素丰富', '苹果、香蕉、酸奶', '1.水果切块\n2.淋上酸奶\n3.搅拌均匀', 100, 2, 3, 2, '6-12岁儿童', '维生素、膳食纤维'),
+            ('燕麦牛奶粥', '早餐暖胃', '燕麦40g、牛奶200ml', '燕麦煮软后加牛奶搅匀', 220, 9, 32, 6, '儿童早餐', '钙、谷物、乳制品'),
+            ('清蒸鲈鱼', '优质蛋白', '鲈鱼、姜丝、葱', '水开后蒸8-10分钟，少盐', 180, 28, 3, 6, '儿童', '鱼、蛋白质、DHA'),
+            ('西兰花炒虾仁', '蔬菜+蛋白', '西兰花、虾仁、蒜末', '西兰花焯水后与虾仁少油翻炒', 160, 18, 12, 5, '儿童', '蔬菜、虾、蛋白质'),
+            ('香蕉酸奶杯', '加餐', '香蕉、酸奶', '切块拌酸奶', 190, 6, 34, 4, '加餐', '水果、酸奶、钙'),
+            ('番茄牛肉面', '汤面', '牛肉末、番茄、面条、青菜', '炒香牛肉加番茄煮汁下面', 380, 22, 48, 10, '运动日', '牛肉、面、蔬菜'),
         ]
         for name, desc, ingredients, steps, cal, prot, carb, fat, suitable, target in recipes_data:
             Recipe.objects.get_or_create(

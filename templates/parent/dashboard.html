@@ -348,6 +348,48 @@
         color: #4CAF50;
     }
 
+    .recipe-family-badge {
+        display: inline-block;
+        font-size: 11px;
+        background: #fff3e0;
+        color: #e65100;
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+    }
+
+    .recipe-add-grid label {
+        display: block;
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 4px;
+    }
+
+    .recipe-add-grid input, .recipe-add-grid textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .recipe-add-grid textarea {
+        min-height: 56px;
+        resize: vertical;
+    }
+
+    .recipe-add-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    @media (max-width: 600px) {
+        .recipe-add-row { grid-template-columns: 1fr; }
+    }
+
     .meal-card-wrap {
         text-align: left;
     }
@@ -652,6 +694,9 @@
         </div>
         <div class="child-stats">
             <div class="child-name">{{ child.nickname }}</div>
+            <div class="stat-item" id="childAgeLine" style="margin-top:6px;">
+                {% if child_age_years is not None %}周岁 <strong id="childAgeYears">{{ child_age_years }}</strong> 岁 · 出生日期由家庭端维护{% else %}尚未填写出生日期 · 用于推荐摄入与周报{% endif %}
+            </div>
             <div class="child-level" id="dash-level-line"><span class="icon icon-star"></span> Lv.<span id="dash-level">{{ child.level }}</span> 小勇士</div>
             <div class="progress-bar">
                 <div class="progress-fill" id="dash-progress-fill" style="width: {{ progress_percent }}%"></div>
@@ -687,7 +732,16 @@
                 </div>
             </div>
             <div class="diet-notes-box" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
-                <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">膳食备注（忌口、过敏、医嘱摘要）</div>
+                <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">出生日期（仅家庭端）</div>
+                <p style="font-size: 12px; color: #888; margin: 0 0 8px;">年龄由出生日期自动计算；儿童端、学校端<strong>只读</strong>展示，勿提供修改入口。</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                    <input type="date" id="birthDateInput" value="{% if child.birth_date %}{{ child.birth_date|date:'Y-m-d' }}{% endif %}" max="" style="padding:8px;border:1px solid #ddd;border-radius:8px;">
+                    <button type="button" class="btn-add" onclick="saveBirthDate()">保存</button>
+                    <button type="button" class="btn-ghost" onclick="clearBirthDate()">清空</button>
+                </div>
+                <span id="birthDateStatus" style="display:block;margin-top:8px;font-size:13px;color:#666;"></span>
+            </div>
+            <div class="diet-notes-box" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
                 <p style="font-size: 12px; color: #888; margin: 0 0 8px;">仅家庭端可编辑；儿童端同事若要在孩子首页展示，可读取模型字段 <code>Child.diet_notes</code>。</p>
                 <textarea id="dietNotesInput" maxlength="4000" placeholder="例如：对花生过敏；晚餐尽量少油…">{{ child.diet_notes }}</textarea>
                 <button type="button" class="btn-add" style="margin-top: 8px;" onclick="saveDietNotes()">保存备注</button>
@@ -842,10 +896,51 @@
 
     <div class="section" id="sec-recipes">
         <h2 class="section-title">智能食谱推荐</h2>
-        <p style="font-size: 13px; color: #666; margin: -8px 0 12px;">默认按当前孩子未点亮的五色类优先推荐；也可手动刷新全部。</p>
+        <p style="font-size: 13px; color: #666; margin: -8px 0 12px;">「按缺口推荐」会按孩子<strong>当天尚未点亮的五色</strong>从<strong>全库食谱</strong>里筛选，并按<strong>缺口匹配度</strong>排序；系统预置食谱优先于「我家食谱」，不会只因刚添加就顶到前面。热量与三大营养素在您保存「我家食谱」时<strong>由食材清单自动估算</strong>（匹配食材库）。</p>
+        <details style="margin-bottom: 14px; background: #fafafa; border-radius: 10px; padding: 12px 14px;">
+            <summary style="cursor: pointer; font-weight: 600; color: #333;">添加自定义食谱</summary>
+            <div class="recipe-add-grid" style="margin-top: 12px;">
+                <div class="recipe-add-row" style="grid-template-columns: 1fr;">
+                    <div>
+                        <label for="newRecipeName">食谱名称（必填）</label>
+                        <input type="text" id="newRecipeName" maxlength="100" placeholder="例如：外婆的红烧冬瓜">
+                    </div>
+                </div>
+                <div class="recipe-add-row" style="grid-template-columns: 1fr;">
+                    <div>
+                        <label for="newRecipeIngredients">食材清单（必填）</label>
+                        <textarea id="newRecipeIngredients" maxlength="2000" placeholder="每行或顿号分隔，例如：冬瓜300g、瘦肉50g、姜少许"></textarea>
+                    </div>
+                </div>
+                <div class="recipe-add-row" style="grid-template-columns: 1fr;">
+                    <div>
+                        <label for="newRecipeDesc">简介（选填）</label>
+                        <textarea id="newRecipeDesc" maxlength="2000" placeholder="一句话说明"></textarea>
+                    </div>
+                </div>
+                <div class="recipe-add-row" style="grid-template-columns: 1fr;">
+                    <div>
+                        <label for="newRecipeSteps">做法（选填）</label>
+                        <textarea id="newRecipeSteps" maxlength="5000" placeholder="分步写清，方便家人照着做"></textarea>
+                    </div>
+                </div>
+                <div class="recipe-add-row">
+                    <div>
+                        <label for="newRecipeTarget">补充营养 / 关键词（选填）</label>
+                        <input type="text" id="newRecipeTarget" maxlength="100" placeholder="留空则根据食材自动归纳；也可手写如：蔬菜、钙">
+                    </div>
+                    <div>
+                        <label for="newRecipeSuitable">适宜说明（选填）</label>
+                        <input type="text" id="newRecipeSuitable" maxlength="50" placeholder="默认：家庭端添加">
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addParentRecipe()">保存到食谱库</button>
+                <span id="newRecipeStatus" style="margin-left:10px;font-size:13px;color:#666;"></span>
+            </div>
+        </details>
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
-            <button type="button" class="btn-add" onclick="loadRecipes(true)">按缺口推荐</button>
-            <button type="button" class="btn-ghost" onclick="loadRecipes(false)">全部食谱</button>
+            <button type="button" class="btn-add" onclick="loadRecipes(true, 30)">按缺口推荐</button>
+            <button type="button" class="btn-ghost" onclick="loadRecipes(false, 50)">全部食谱（更多）</button>
         </div>
         <div id="recipeList">
             <div class="empty-state"><p>加载中…</p></div>
@@ -1051,6 +1146,45 @@ function prependEncouragementList(enc) {
     }
 }
 
+function saveBirthDate() {
+    const v = document.getElementById('birthDateInput').value;
+    const st = document.getElementById('birthDateStatus');
+    fetch('/parent/child-birth-date/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'birth_date=' + encodeURIComponent(v)
+    })
+    .then(r => r.json())
+    .then(data => {
+        st.textContent = data.message || (data.success ? '已保存' : '失败');
+        st.style.color = data.success ? '#2e7d32' : '#c62828';
+        if (data.success) {
+            const line = document.getElementById('childAgeLine');
+            if (line) {
+                if (data.age_years != null) {
+                    line.innerHTML = `周岁 <strong id="childAgeYears">${data.age_years}</strong> 岁 · 出生日期由家庭端维护`;
+                } else {
+                    line.textContent = '尚未填写出生日期 · 用于推荐摄入与周报';
+                }
+            }
+            showToast(data.message);
+        }
+        setTimeout(() => { st.textContent = ''; }, 3500);
+    })
+    .catch(() => {
+        st.textContent = '网络错误';
+        st.style.color = '#c62828';
+    });
+}
+
+function clearBirthDate() {
+    document.getElementById('birthDateInput').value = '';
+    saveBirthDate();
+}
+
 function saveDietNotes() {
     const notes = document.getElementById('dietNotesInput').value;
     const st = document.getElementById('dietNotesStatus');
@@ -1242,23 +1376,29 @@ document.getElementById('mealModal').addEventListener('click', function(ev) {
     if (ev.target === this) closeMealModal();
 });
 
-function loadRecipes(useGaps) {
-    let url = '/parent/recipes/';
-    if (useGaps) url += '?fill_gaps=1';
+function loadRecipes(useGaps, limit) {
+    limit = limit || 30;
+    window.__lastRecipeLoad = { useGaps: !!useGaps, limit: limit };
+    let url = '/parent/recipes/?limit=' + encodeURIComponent(limit);
+    if (useGaps) url += '&fill_gaps=1';
     fetch(url)
     .then(r => r.json())
     .then(data => {
         const el = document.getElementById('recipeList');
         if (!data.success || !data.recipes || data.recipes.length === 0) {
-            el.innerHTML = '<div class="empty-state"><p>暂无食谱数据（可由管理员在后台录入）</p></div>';
+            el.innerHTML = '<div class="empty-state"><p>暂无食谱数据（可先添加「我家食谱」）</p></div>';
             if (!data.recipes || data.recipes.length === 0) showToast('暂无食谱');
             return;
         }
         window.__parentRecipeCache = data.recipes;
         let html = '';
         data.recipes.forEach(r => {
+            const badge = r.is_family_recipe
+                ? `<div class="recipe-family-badge">我家食谱${r.created_by ? ' · ' + escapeHtml(r.created_by) : ''}</div>`
+                : '';
             html += `
                 <div class="recipe-card">
+                    ${badge}
                     <div class="recipe-title">${escapeHtml(r.name)}</div>
                     <div class="recipe-desc">${escapeHtml(r.description || '')}</div>
                     <div class="recipe-nutrition">
@@ -1274,6 +1414,50 @@ function loadRecipes(useGaps) {
         el.innerHTML = html;
     })
     .catch(() => showToast('食谱加载失败'));
+}
+
+function addParentRecipe() {
+    const name = document.getElementById('newRecipeName').value.trim();
+    const ingredients = document.getElementById('newRecipeIngredients').value.trim();
+    const st = document.getElementById('newRecipeStatus');
+    if (!name || !ingredients) {
+        showToast('请填写食谱名称和食材清单');
+        return;
+    }
+    const params = new URLSearchParams();
+    params.set('name', name);
+    params.set('ingredients', ingredients);
+    params.set('description', document.getElementById('newRecipeDesc').value.trim());
+    params.set('steps', document.getElementById('newRecipeSteps').value.trim());
+    params.set('target_nutrients', document.getElementById('newRecipeTarget').value.trim());
+    const suit = document.getElementById('newRecipeSuitable').value.trim();
+    if (suit) params.set('suitable_for', suit);
+    fetch('/parent/recipes/add/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString()
+    })
+    .then(r => r.json())
+    .then(data => {
+        st.textContent = data.message || '';
+        st.style.color = data.success ? '#2e7d32' : '#c62828';
+        if (data.success) {
+            showToast('已保存');
+            document.getElementById('newRecipeName').value = '';
+            document.getElementById('newRecipeIngredients').value = '';
+            document.getElementById('newRecipeDesc').value = '';
+            document.getElementById('newRecipeSteps').value = '';
+            document.getElementById('newRecipeTarget').value = '';
+            document.getElementById('newRecipeSuitable').value = '';
+            const prev = window.__lastRecipeLoad || { useGaps: true, limit: 30 };
+            loadRecipes(prev.useGaps, prev.limit);
+            setTimeout(() => { st.textContent = ''; }, 3000);
+        }
+    })
+    .catch(() => { st.textContent = '网络错误'; st.style.color = '#c62828'; });
 }
 
 function loadMealReport(days) {
@@ -1373,10 +1557,14 @@ function addToClass() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    const bd = document.getElementById('birthDateInput');
+    if (bd) {
+        bd.setAttribute('max', new Date().toISOString().slice(0, 10));
+    }
     loadTeachers();
     loadMealReport(7);
     loadParentMealHistory(14);
-    loadRecipes(true);
+    loadRecipes(true, 30);
     document.getElementById('recipeList').addEventListener('click', function(ev) {
         const btn = ev.target.closest('.copy-recipe-btn');
         if (!btn) return;
