@@ -712,6 +712,7 @@
         <a href="#sec-meals">今日膳食</a>
         <a href="#sec-trend">健康趋势</a>
         <a href="#sec-tasks">健康任务</a>
+        <a href="#sec-school-resources">校园微课</a>
         <a href="#sec-recipes">食谱</a>
         <a href="#sec-history">历史膳食</a>
         <a href="#sec-settings">家庭与班级</a>
@@ -983,8 +984,8 @@
     </details>
 
     <div class="section" id="sec-encourage">
-        <h2 class="section-title">发送鼓励</h2>
-        <p style="font-size: 12px; color: #888; margin: -8px 0 10px;">文案将推送到儿童端「家长鼓励」；下列列表为发给当前孩子 <strong>{{ child.nickname }}</strong> 的最近记录（孩子是否已读见状态）。</p>
+        <h2 class="section-title">鼓励与校园通知</h2>
+        <p style="font-size: 12px; color: #888; margin: -8px 0 10px;">含您发送的鼓励与<strong>学校端推送</strong>的活动 / 挑战 / 微课摘要；孩子会同步在未读列表中。</p>
         <div class="encouragement-input">
             <input type="text" id="encouragementMsg" placeholder="输入鼓励语..." maxlength="500">
             <button type="button" class="btn-add" onclick="sendEncouragement()">发送</button>
@@ -996,16 +997,38 @@
             <button type="button" class="quick-phrase" onclick="usePhrase('家人为你骄傲！')"><span class="icon icon-heart"></span> 家人骄傲</button>
         </div>
         <ul class="enc-list" id="encouragementSentList">
-            {% for e in encouragements %}
-            <li data-enc-id="{{ e.id }}">
-                {{ e.message }}
-                <div class="enc-meta">{{ e.created_at|date:"Y-m-d H:i" }} · {% if e.is_read %}孩子已读{% else %}未读{% endif %}</div>
+            {% for row in encouragement_feed %}
+            <li data-enc-id="{{ row.id }}">
+                {{ row.message }}
+                <div class="enc-meta">{{ row.created_at|date:"Y-m-d H:i" }} · {{ row.sender_label }} · {% if row.is_read %}孩子已读{% else %}未读{% endif %}</div>
             </li>
             {% empty %}
-            <li style="border-left-color:#ccc;color:#999;">暂无记录，发送一条试试吧</li>
+            <li style="border-left-color:#ccc;color:#999;">暂无记录</li>
             {% endfor %}
         </ul>
     </div>
+
+    {% if school_course_resources %}
+    <div class="section" id="sec-school-resources" style="margin-top: 16px;">
+        <h2 class="section-title">校园健康微课</h2>
+        <p style="font-size: 13px; color: #666; margin: -8px 0 12px;">与儿童端同源：学校推送后，孩子完成打卡可解锁；此处便于家长陪学。</p>
+        {% for row in school_course_resources %}
+        {% with r=row.resource %}
+        <div style="border-left:4px solid #5c6bc0;padding:12px 14px;background:#f8f9ff;border-radius:0 10px 10px 0;margin-bottom:12px;">
+            <div style="font-weight:600;">{{ r.title }}</div>
+            <div style="font-size:12px;color:#888;margin:4px 0;">{{ row.class_label }} · {{ r.get_resource_type_display }}</div>
+            {% if row.unlocked %}
+                {% if r.summary %}<p style="font-size:13px;margin:8px 0 0;">{{ r.summary }}</p>{% endif %}
+                {% if r.content %}<p style="font-size:13px;margin:8px 0 0;white-space:pre-wrap;">{{ r.content }}</p>{% endif %}
+                {% if r.media_url %}<p style="margin:8px 0 0;"><a href="{{ r.media_url }}" target="_blank" rel="noopener noreferrer">打开课件 / 视频链接</a></p>{% endif %}
+            {% else %}
+                <p style="font-size:13px;color:#c62828;margin:8px 0 0;">孩子完成相应健康打卡后将自动解锁。</p>
+            {% endif %}
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <div class="section" id="sec-recipes">
         <h2 class="section-title">智能食谱推荐</h2>
@@ -1255,7 +1278,8 @@ function prependEncouragementList(enc) {
     const li = document.createElement('li');
     li.dataset.encId = enc.id;
     const readLabel = enc.is_read ? '孩子已读' : '未读';
-    li.innerHTML = `${escapeHtml(enc.message)}<div class="enc-meta">${escapeHtml(enc.created_at)} · ${readLabel}</div>`;
+    const who = enc.sender_label ? escapeHtml(enc.sender_label) : '我';
+    li.innerHTML = `${escapeHtml(enc.message)}<div class="enc-meta">${escapeHtml(enc.created_at)} · ${who} · ${readLabel}</div>`;
     const first = ul.firstElementChild;
     if (first && first.textContent.indexOf('暂无记录') !== -1) {
         first.remove();

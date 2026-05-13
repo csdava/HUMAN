@@ -7,24 +7,56 @@
 <header class="header" style="display: none;"></header>
 {% endblock %}
 
+{% block main_class %}child-main--fullwidth{% endblock %}
+
 {% block extra_css %}
 <style>
+    /* 与浏览器同宽：取消 base .main 的 max-width 与内边距 */
+    .main.child-main--fullwidth {
+        max-width: none;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
     .child-container {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 20px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0 clamp(12px, 3.5vw, 28px) 40px;
+        box-sizing: border-box;
         min-height: 100vh;
+        background: #e8edf5;
+    }
+
+    .child-dashboard-inner {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .child-panel {
+        background: #fff;
+        border-radius: 14px;
+        padding: 20px 22px;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
     }
 
     .page-header {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         color: white;
-        padding: 30px;
-        border-radius: 16px;
-        margin-bottom: 15px;
+        padding: 24px clamp(16px, 4vw, 32px);
+        border-radius: 14px;
+        margin-bottom: 0;
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 30px;
+        gap: 20px 28px;
+        box-shadow: 0 4px 24px rgba(26, 26, 46, 0.25);
     }
 
     .child-info {
@@ -87,10 +119,8 @@
         border: 1px solid #ffe082;
         border-radius: 14px;
         padding: 16px 18px;
-        margin-bottom: 16px;
-        max-width: 800px;
-        margin-left: auto;
-        margin-right: auto;
+        margin-bottom: 0;
+        box-sizing: border-box;
     }
 
     .parent-notes-card h3 {
@@ -112,10 +142,8 @@
         border: 1px solid #a5d6a7;
         border-radius: 14px;
         padding: 16px 18px;
-        margin-bottom: 16px;
-        max-width: 800px;
-        margin-left: auto;
-        margin-right: auto;
+        margin-bottom: 0;
+        box-sizing: border-box;
     }
 
     .intake-readonly-card h3 {
@@ -133,13 +161,12 @@
 
     .child-alerts-section {
         background: white;
-        border-radius: 16px;
-        padding: 22px 24px;
-        margin-bottom: 16px;
-        max-width: 800px;
-        margin-left: auto;
-        margin-right: auto;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border-radius: 14px;
+        padding: 20px 22px;
+        margin-bottom: 0;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        border: 1px solid #dde3ea;
+        box-sizing: border-box;
     }
 
     .child-alerts-section h3 {
@@ -191,15 +218,17 @@
 
     .warrior-card {
         background: white;
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 15px;
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 0;
         display: flex;
-        gap: 30px;
+        flex-wrap: wrap;
+        gap: 24px;
         align-items: center;
-        max-width: 800px;
-        margin-left: auto;
-        margin-right: auto;
+        justify-content: space-between;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
     }
 
     .warrior-avatar {
@@ -357,27 +386,34 @@
 
     .tasks-section {
         background: white;
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 20px;
-        max-width: 800px;
-        margin-left: auto;
-        margin-right: auto;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 0;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
     }
 
     .section-title {
-        font-size: 20px;
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #f0f0f0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0 0 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #ebeef2;
+        letter-spacing: 0.02em;
     }
 
     .task-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    @media (min-width: 560px) {
+        .task-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 
     .task-card {
@@ -463,12 +499,107 @@
 
     .meal-section {
         background: white;
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 20px;
-        max-width: 800px;
-        margin-left: auto;
-        margin-right: auto;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 0;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
+    }
+
+    .health-section {
+        background: #fff;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 0;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
+    }
+
+    .health-section .health-actions button {
+        color: #fff;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .health-section .health-actions .btn-health-sync {
+        background: linear-gradient(135deg, #4CAF50, #81C784);
+    }
+
+    .health-section .health-actions .btn-health-manual {
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+    }
+
+    .school-resources-section {
+        background: #fff;
+        border-radius: 14px;
+        padding: 22px;
+        margin: 0;
+        border: 1px solid #c5cae9;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
+    }
+
+    .school-resources-section .section-title {
+        margin-top: 0;
+    }
+
+    .school-resources-hint {
+        font-size: 13px;
+        color: #5c6570;
+        margin: -4px 0 14px;
+        line-height: 1.5;
+    }
+
+    .school-resources-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .school-resource-row {
+        border-left: 4px solid #5c6bc0;
+        padding: 12px 14px;
+        background: #f8f9ff;
+        border-radius: 0 10px 10px 0;
+    }
+
+    .school-resource-title {
+        font-weight: 600;
+        color: #333;
+        font-size: 15px;
+    }
+
+    .school-resource-meta {
+        font-size: 12px;
+        color: #888;
+        margin: 4px 0 0;
+    }
+
+    .school-resource-body {
+        font-size: 13px;
+        color: #555;
+        margin: 8px 0 0;
+        line-height: 1.5;
+    }
+
+    .school-resource-body--content {
+        color: #444;
+        white-space: pre-wrap;
+    }
+
+    .school-resource-link {
+        margin: 8px 0 0;
+    }
+
+    .school-resource-locked {
+        font-size: 13px;
+        color: #c62828;
+        margin: 8px 0 0;
     }
 
     .meal-upload {
@@ -772,8 +903,8 @@
 
     .meal-records {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
     }
 
     .meal-record {
@@ -802,9 +933,12 @@
 
     .badges-section {
         background: white;
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 20px;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 0;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
     }
 
     .badges-grid {
@@ -850,9 +984,12 @@
 
     .challenge-section {
         background: white;
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 20px;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 0;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
     }
 
     .challenge-item {
@@ -902,9 +1039,12 @@
 
     .encouragement-section {
         background: white;
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 20px;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 0;
+        border: 1px solid #dde3ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-sizing: border-box;
     }
 
     .encouragement-list {
@@ -982,6 +1122,7 @@
         <a href="{% url 'logout' %}" style="color: #667eea;">退出登录</a>
     </div>
     {% else %}
+    <div class="child-dashboard-inner">
     <div class="page-header">
         <div class="child-info">
             <div class="child-name">{{ child.nickname }}</div>
@@ -1116,18 +1257,18 @@
     </div>
 
     <!-- 健康数据区域 -->
-    <div class="health-section" style="background: white; border-radius: 16px; padding: 30px; margin-bottom: 15px; max-width: 800px; margin-left: auto; margin-right: auto;">
+    <div class="health-section">
         <h2 class="section-title">手环健康数据</h2>
         <div id="healthDataSection">
             <div class="empty-state" style="padding: 20px;">
                 <p style="color: #999;">正在加载健康数据...</p>
             </div>
         </div>
-        <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
-            <button onclick="autoGenerateHealth()" style="background: linear-gradient(135deg, #4CAF50, #81C784); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+        <div class="health-actions">
+            <button type="button" class="btn-health-sync" onclick="autoGenerateHealth()">
                 自动同步
             </button>
-            <button onclick="openHealthModal()" style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+            <button type="button" class="btn-health-manual" onclick="openHealthModal()">
                 手动输入
             </button>
         </div>
@@ -1277,6 +1418,30 @@
     </div>
     {% endif %}
 
+    {% if school_course_resources %}
+    <div class="school-resources-section">
+        <h2 class="section-title">校园健康微课</h2>
+        <p class="school-resources-hint">班主任已推送的资源；完成打卡后可自动解锁（与家长端一致）。</p>
+        <div class="school-resources-list">
+            {% for row in school_course_resources %}
+            {% with r=row.resource %}
+            <div class="school-resource-row">
+                <div class="school-resource-title">{{ r.title }}</div>
+                <div class="school-resource-meta">{{ row.class_label }} · {{ r.get_resource_type_display }} · {{ r.pushed_at|date:"Y-m-d" }}</div>
+                {% if row.unlocked %}
+                    {% if r.summary %}<p class="school-resource-body">{{ r.summary }}</p>{% endif %}
+                    {% if r.content %}<p class="school-resource-body school-resource-body--content">{{ r.content }}</p>{% endif %}
+                    {% if r.media_url %}<p class="school-resource-link"><a href="{{ r.media_url }}" target="_blank" rel="noopener noreferrer">打开课件 / 视频链接</a></p>{% endif %}
+                {% else %}
+                    <p class="school-resource-locked">请先完成健康打卡，解锁后可见全文与链接。</p>
+                {% endif %}
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     {% if badges %}
     <div class="badges-section">
         <h2 class="section-title">我的徽章</h2>
@@ -1292,7 +1457,7 @@
 
     {% if encouragements %}
     <div class="encouragement-section">
-        <h2 class="section-title">家长鼓励</h2>
+        <h2 class="section-title">家长与校园消息</h2>
         <div class="encouragement-list">
             {% for enc in encouragements %}
             <div class="encouragement-item" id="enc-{{ enc.id }}">
@@ -1303,6 +1468,8 @@
             </div>
             {% endfor %}
         </div>
+    </div>
+    {% endif %}
     </div>
     {% endif %}
 </div>

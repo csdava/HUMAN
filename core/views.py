@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.utils.html import escape
 from django.utils.dateparse import parse_date
 from django.db.models import Count, Q, Sum, Avg
 from datetime import timedelta
@@ -195,10 +196,13 @@ def child_dashboard(request):
             'badges': [],
             'active_challenges': [],
             'family_health_readonly': None,
+            'school_course_resources': [],
         })
 
     if not child.bind_code:
         child.generate_bind_code()
+
+    _sync_active_challenge_progress_for_child(child)
 
     today = timezone.now().date()
     tasks = Task.objects.all()
@@ -251,6 +255,7 @@ def child_dashboard(request):
         'badges': badges,
         'active_challenges': active_challenges,
         'family_health_readonly': _intake_and_tags_for_child(child),
+        'school_course_resources': _school_course_resources_for_child(child),
     })
 
 
@@ -829,6 +834,8 @@ def parent_dashboard(request):
         child = children.first()
         request.session['selected_child_id'] = child.id
 
+    _sync_active_challenge_progress_for_child(child)
+
     today = timezone.now().date()
 
     pending_tasks = TaskRecord.objects.filter(
@@ -849,9 +856,22 @@ def parent_dashboard(request):
         child=child, date__gte=three_days_ago, status='completed'
     ).select_related('task').order_by('-date', '-submitted_at')
 
-    encouragements = Encouragement.objects.filter(
-        sender=request.user, child=child
-    ).order_by('-created_at')[:15]
+    school_sender_ids = set(Teacher.objects.values_list('user_id', flat=True))
+    encouragement_feed = []
+    for e in Encouragement.objects.filter(child=child).select_related('sender').order_by('-created_at')[:25]:
+        if e.sender_id == request.user.id:
+            sender_label = '我'
+        elif e.sender_id in school_sender_ids:
+            sender_label = '校园'
+        else:
+            sender_label = (e.sender.username or '').strip() or '家人'
+        encouragement_feed.append({
+            'id': e.id,
+            'message': e.message,
+            'created_at': e.created_at,
+            'is_read': e.is_read,
+            'sender_label': sender_label,
+        })
 
     denom = child.power_to_next or 1
     progress_percent = min(100, int((child.power / denom) * 100))
@@ -895,7 +915,7 @@ def parent_dashboard(request):
         'week_completed': week_completed,
         'today_completed': today_completed,
         'recent_records': recent_records,
-        'encouragements': encouragements,
+        'encouragement_feed': encouragement_feed,
         'progress_percent': progress_percent,
         'today_meals': today_meals,
         'today_meal_totals': today_meal_totals,
@@ -903,6 +923,7 @@ def parent_dashboard(request):
         'parent_health_alerts': parent_health_alerts,
         'parent_alerts_unread': parent_alerts_unread,
         'children_class_map': children_class_map,
+        'school_course_resources': _school_course_resources_for_child(child),
     })
 
 
@@ -924,6 +945,8 @@ def parent_confirm_task(request, record_id):
     record.status = 'completed'
     record.confirmed_at = timezone.now()
     record.save()
+
+    _after_child_task_completed_hooks(child)
 
     upgraded = child.add_power(record.task.power_reward)
 
@@ -966,6 +989,7 @@ def parent_add_manual_task(request):
             record.status = 'completed'
             record.confirmed_at = timezone.now()
             record.save()
+            _after_child_task_completed_hooks(child)
             upgraded = child.add_power(task.power_reward)
             stats = _parent_task_stats_payload(child, upgraded)
             return JsonResponse({
@@ -975,6 +999,7 @@ def parent_add_manual_task(request):
             })
         return JsonResponse({'success': False, 'message': '今日该任务已完成'})
 
+    _after_child_task_completed_hooks(child)
     upgraded = child.add_power(task.power_reward)
 
     Encouragement.objects.create(
@@ -1017,6 +1042,7 @@ def parent_send_encouragement(request):
             'message': enc.message,
             'created_at': timezone.localtime(enc.created_at).strftime('%Y-%m-%d %H:%M'),
             'is_read': enc.is_read,
+            'sender_label': '我',
         },
     })
 
@@ -2378,6 +2404,45 @@ def _challenge_stats_bundle(challenge, anon_scope):
     }
 
 
+def _challenge_finalize_report_html(challenge, bundle, leaderboard_full):
+    """结束挑战时写入的 HTML 表格报告（仅学校端展示，文本字段已转义）。"""
+    title = escape(challenge.title)
+    meta = [
+        ('挑战名称', title),
+        ('范围', escape(challenge.get_scope_display())),
+        ('挑战类型', escape(challenge.challenge_type or '—')),
+        ('统计周期', f'{challenge.start_date} ~ {challenge.end_date}'),
+        ('目标值', str(challenge.target_value)),
+        ('参与人数', str(bundle['student_count'])),
+        ('达标人数', str(bundle['completed_count'])),
+        ('达标率', f"{bundle['completion_rate']}%"),
+        ('平均完成度', f"{bundle['avg_progress_percent']}%"),
+        ('规则说明', escape(challenge.rule_description or '—')),
+        ('奖励说明', escape(challenge.reward_description or '—')),
+    ]
+    meta_rows = ''.join(
+        f'<tr><td>{escape(k)}</td><td>{v}</td></tr>' for k, v in meta
+    )
+    detail_rows = []
+    for i, row in enumerate(leaderboard_full, 1):
+        status = '达标' if row['done'] else '未达标'
+        detail_rows.append(
+            f'<tr><td>{i}</td><td>{escape(row["anon"])}</td><td>{row["progress"]}</td>'
+            f'<td>{challenge.target_value}</td><td>{row["percent"]}%</td><td>{status}</td></tr>'
+        )
+    body = ''.join(detail_rows) if detail_rows else '<tr><td colspan="6">暂无参与数据</td></tr>'
+    return (
+        '<div class="challenge-summary-report">'
+        f'<p><strong>《{title}》挑战总结报告</strong></p>'
+        '<table class="summary-report-table"><thead><tr><th>项目</th><th>内容</th></tr></thead>'
+        f'<tbody>{meta_rows}</tbody></table>'
+        '<p><strong>匿名学生完成情况</strong></p>'
+        '<table class="summary-report-table"><thead>'
+        '<tr><th>序号</th><th>匿名标识</th><th>当前进度</th><th>目标</th><th>完成率</th><th>状态</th></tr>'
+        f'</thead><tbody>{body}</tbody></table></div>'
+    )
+
+
 def _class_health_overview(teacher, days=7):
     today = timezone.now().date()
     start = today - timedelta(days=days - 1)
@@ -2560,6 +2625,82 @@ def _sync_challenge_progress_to_children(challenge):
         elif not done:
             prog.completed_at = None
         prog.save()
+
+
+def _try_unlock_school_resources_for_child(child):
+    """根据打卡记录补写学校推送微课的解锁（不依赖教师登录学校端）。"""
+    if not child:
+        return
+    teacher_ids = list(ClassStudent.objects.filter(child=child).values_list('teacher_id', flat=True))
+    if not teacher_ids:
+        return
+    for res in HealthCourseResource.objects.filter(
+        teacher_id__in=teacher_ids,
+        pushed_at__isnull=False,
+    ):
+        if res.unlock_requires_task:
+            since = res.pushed_at.date()
+            if TaskRecord.objects.filter(
+                child=child, date__gte=since, status='completed'
+            ).exists():
+                HealthResourceUnlock.objects.get_or_create(resource=res, child=child)
+        else:
+            HealthResourceUnlock.objects.get_or_create(resource=res, child=child)
+
+
+def _sync_active_challenge_progress_for_child(child):
+    """家长确认任务后刷新该生正在进行中挑战的进度（与学校端规则一致）。"""
+    if not child:
+        return
+    for prog in ChallengeProgress.objects.filter(
+        child=child, challenge__status='active'
+    ).select_related('challenge'):
+        ch = prog.challenge
+        raw = _challenge_progress_count(ch, child)
+        capped = min(raw, ch.target_value)
+        done = raw >= ch.target_value
+        prog.current_value = capped
+        prog.is_completed = done
+        if done and prog.completed_at is None:
+            prog.completed_at = timezone.now()
+        elif not done:
+            prog.completed_at = None
+        prog.save()
+
+
+def _after_child_task_completed_hooks(child):
+    _sync_active_challenge_progress_for_child(child)
+    _try_unlock_school_resources_for_child(child)
+
+
+def _school_course_resources_for_child(child):
+    if not child:
+        return []
+    teacher_ids = list(ClassStudent.objects.filter(child=child).values_list('teacher_id', flat=True))
+    if not teacher_ids:
+        return []
+    resources = list(
+        HealthCourseResource.objects.filter(
+            teacher_id__in=teacher_ids,
+            pushed_at__isnull=False,
+        ).select_related('teacher', 'teacher__school').order_by('-pushed_at')[:24]
+    )
+    if not resources:
+        return []
+    unlocked_ids = set(
+        HealthResourceUnlock.objects.filter(
+            child=child,
+            resource_id__in=[r.id for r in resources],
+        ).values_list('resource_id', flat=True)
+    )
+    rows = []
+    for r in resources:
+        rows.append({
+            'resource': r,
+            'unlocked': r.id in unlocked_ids,
+            'class_label': f'{r.teacher.school.name} · {r.teacher.class_name}',
+        })
+    return rows
 
 
 def _sync_all_active_challenges_for_teacher(teacher):
@@ -2873,21 +3014,44 @@ def school_challenge_stats(request, pk):
 @user_passes_test(is_teacher)
 @require_http_methods(['POST'])
 def school_challenge_finalize(request, pk):
-    """结束挑战并生成总结报告（存于 HealthChallenge.summary_report）"""
+    """结束挑战并生成表格总结报告（存于 HealthChallenge.summary_report）。"""
     teacher = request.user.teacher_profile
-    challenge = get_object_or_404(HealthChallenge, pk=pk, teacher=teacher)
-    bundle = _challenge_stats_bundle(challenge, teacher)
-    custom = request.POST.get('summary', '').strip()
-    auto = (
-        f"【{challenge.title}】挑战总结\n"
-        f"范围：{challenge.get_scope_display()}\n"
-        f"时间：{challenge.start_date} ~ {challenge.end_date}\n"
-        f"参与席位：{bundle['student_count']}，达标：{bundle['completed_count']}\n"
-        f"班级达标率：{bundle['completion_rate']}%，平均完成度：{bundle['avg_progress_percent']}%\n"
-        f"规则回顾：{challenge.rule_description or '—'}\n"
-        f"奖励说明：{challenge.reward_description or '—'}"
+    challenge = get_object_or_404(
+        HealthChallenge.objects.filter(
+            Q(teacher=teacher) | Q(scope='school', teacher__school=teacher.school)
+        ),
+        pk=pk,
     )
-    challenge.summary_report = custom or auto
+    if challenge.status != 'active':
+        return JsonResponse({'success': False, 'message': '该挑战已结束或已取消'})
+    _ensure_challenge_progress_rows(challenge)
+    _sync_challenge_progress_to_children(challenge)
+    bundle = _challenge_stats_bundle(challenge, teacher)
+    target = max(challenge.target_value, 1)
+    leaderboard_full = []
+    for child in _challenge_audience_children(challenge):
+        raw = _challenge_progress_count(challenge, child)
+        pct = min(100, int(raw / target * 100))
+        done = raw >= challenge.target_value
+        leaderboard_full.append({
+            'anon': _school_anon_label(child.id, teacher.id),
+            'progress': raw,
+            'percent': pct,
+            'done': done,
+        })
+    leaderboard_full.sort(key=lambda x: -x['progress'])
+    custom = request.POST.get('summary', '').strip()
+    if custom:
+        challenge.summary_report = (
+            '<div class="challenge-summary-report">'
+            '<table class="summary-report-table"><tbody><tr><td>'
+            f'<pre style="white-space:pre-wrap;margin:0;font-size:13px">{escape(custom)}</pre>'
+            '</td></tr></tbody></table></div>'
+        )
+    else:
+        challenge.summary_report = _challenge_finalize_report_html(
+            challenge, bundle, leaderboard_full
+        )
     challenge.status = 'completed'
     challenge.save()
     return JsonResponse({'success': True, 'summary': challenge.summary_report})

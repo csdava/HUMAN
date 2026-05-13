@@ -439,7 +439,7 @@
         </header>
         {% endblock %}
 
-        <main class="main">
+        <main class="main {% block main_class %}{% endblock %}">
             {% block content %}{% endblock %}
         </main>
 
