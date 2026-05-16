@@ -66,7 +66,17 @@
       "Bash(KMP_DUPLICATE_LIB_OK=TRUE D:/Applications/anaconda/python.exe manage.py shell -c \"from ultralytics import YOLO; print\\('ultralytics OK'\\); print\\('torch OK:', import torch; torch.__version__\\)\")",
       "Bash(KMP_DUPLICATE_LIB_OK=TRUE D:/Applications/anaconda/python.exe manage.py shell -c ' *)",
       "Bash(python -c \"import sys; print\\('Python:', sys.executable\\)\")",
-      "Bash(python -c \"import sys; print\\(sys.version\\)\")"
+      "Bash(python -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(git push *)",
+      "Read(//d/Users/**)",
+      "Bash(python -c \"import torch; print\\(f'torch {torch.__version__}'\\)\")",
+      "Bash(pip index *)",
+      "Bash(python -c \"import torch; print\\(f'torch {torch.__version__}'\\); print\\(f'CUDA available: {torch.cuda.is_available\\(\\)}'\\); print\\(f'GPU count: {torch.cuda.device_count\\(\\) if torch.cuda.is_available\\(\\) else 0}'\\)\")",
+      "Bash(conda info *)",
+      "Bash(conda run *)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(curl -s http://127.0.0.1:8000/ -o /dev/null -w \"%{http_code}\")",
+      "Bash(CONDA_NO_PLUGINS=true conda run -n yolo_gpu python D:/User/Documents/PycharmProjects/human/test_detection3.py)"
     ],
     "additionalDirectories": [
       "D:\\User\\Documents\\PycharmProjects\\DjangoProject333\\runs\\detect\\train-2\\weights"

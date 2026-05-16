@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}童视智圈 - 鼓励{% endblock %}
+
+{% block header %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-logo">
+            <span class="icon icon-leaf" style="font-size: 28px;"></span>
+            小勇士健康管理系统
+        </div>
+        <nav class="header-nav">
+            <a href="{% url 'child_dashboard' %}">首页</a>
+            <a href="{% url 'child_health' %}">手环</a>
+            <a href="{% url 'child_meals' %}">膳食</a>
+            <a href="{% url 'child_tasks' %}">任务</a>
+            <a href="{% url 'child_challenges' %}">挑战</a>
+            <a href="{% url 'child_badges_page' %}">徽章</a>
+            <a href="{% url 'child_encouragements' %}" class="active">鼓励</a>
+            <a href="{% url 'child_alerts' %}">预警</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="header-user">
+            <span class="icon icon-user"></span>
+            {{ child.nickname }}
+        </div>
+        <a href="{% url 'logout' %}" class="header-logout">退出</a>
+    </div>
+</header>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .child-container {
+        width: 100%;
+        padding: 0;
+        padding-top: 60px;
+        background: #f0f2f5;
+        min-height: 100vh;
+    }
+
+    .child-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .child-section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 20px 30px;
+        margin-bottom: 0;
+    }
+
+    .encouragement-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .encouragement-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        background: #fff3e0;
+        border-radius: 8px;
+    }
+
+    .encouragement-icon {
+        font-size: 20px;
+        color: #FF9800;
+    }
+
+    .encouragement-text {
+        flex: 1;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .encouragement-time {
+        font-size: 12px;
+        color: #999;
+    }
+
+    .encouragement-close {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="child-container">
+    <div class="page-header">
+        <div style="font-size: 24px; font-weight: bold;">
+            <span class="icon icon-hand"></span> 家长鼓励
+        </div>
+    </div>
+
+    <div class="child-section">
+        <h3 class="child-section-title">鼓励语列表</h3>
+        <div class="encouragement-list">
+            {% for enc in encouragements %}
+            <div class="encouragement-item" id="enc-{{ enc.id }}">
+                <div class="encouragement-icon"><span class="icon icon-hand"></span></div>
+                <div class="encouragement-text">{{ enc.message }}</div>
+                <div class="encouragement-time">{{ enc.created_at|date:"Y-m-d H:i" }}</div>
+                <button class="encouragement-close" onclick="closeEncouragement({{ enc.id }})">x</button>
+            </div>
+            {% empty %}
+            <div style="text-align: center; padding: 40px; color: #999;">
+                <p>暂无鼓励语</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" style="display: none;"></div>
+
+<script>
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 2000);
+}
+
+function closeEncouragement(id) {
+    fetch(`/child/encouragement/${id}/read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(() => {
+        document.getElementById('enc-' + id).style.display = 'none';
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

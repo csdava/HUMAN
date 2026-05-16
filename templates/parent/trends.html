@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}健康趋势 · 家庭端{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-container { width: 100%; padding: 0; background: #f0f2f5; min-height: 100vh; }
+    .page-header { background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 20px 30px; }
+    .page-header h1 { font-size: 22px; margin-bottom: 5px; }
+    .section { background: white; padding: 20px; margin: 16px; border-radius: 12px; }
+    .section-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+    .child-tab { padding: 10px 20px; background: #f0f0f0; border-radius: 20px; cursor: pointer; transition: all 0.3s; display: inline-block; margin: 4px; }
+    .child-tab:hover, .child-tab.active { background: #2196F3; color: white; }
+    .btn-ghost { background: #fff; color: #1976d2; border: 1px solid #90caf9; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    .trend-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+    .trend-days-btn { padding: 8px 14px; border: 1px solid #ddd; background: #fff; border-radius: 8px; cursor: pointer; }
+    .trend-days-btn.active { background: #2196F3; color: #fff; border-color: #2196F3; }
+    .trend-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .trend-chart-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 12px; }
+    .trend-chart-canvas-wrap { position: relative; height: 220px; margin-top: 8px; }
+    .trend-chart-sleep-wrap { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+    .trend-chart-sleep-wrap .trend-chart-canvas-wrap { position: relative; height: 200px; margin-top: 8px; }
+    .trend-bars { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding: 10px 0; overflow-x: auto; }
+    .trend-bar-col { flex: 0 0 22px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .trend-bar { width: 100%; background: linear-gradient(180deg, #81c784, #4caf50); border-radius: 4px 4px 0 0; min-height: 4px; }
+    .trend-date { font-size: 9px; color: #999; writing-mode: horizontal-tb; transform: rotate(-45deg); white-space: nowrap; height: 28px; }
+    @media (max-width: 768px) { .trend-charts-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1>健康趋势</h1>
+    </div>
+
+    {% if children|length > 1 %}
+    <div class="section" style="margin: 16px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            {% for c in children %}
+            <div class="child-tab {% if c.id == child.id %}active{% endif %}" onclick="switchChild({{ c.id }})">
+                {% if c.gender == 'M' %}<span class="icon icon-male"></span>{% else %}<span class="icon icon-female"></span>{% endif %} {{ c.nickname }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h2 class="section-title">健康数据趋势</h2>
+        <p style="font-size: 13px; color: #555; margin-bottom: 12px;">
+            下图汇总膳食热量与五色均分、已确认任务次数及手环步数。导出 PDF 为「健康周报」。
+            <a href="{% url 'parent_export_weekly_pdf' %}?days=7" class="btn-ghost" style="display:inline-block;text-decoration:none;line-height:1.4;margin-left:6px" target="_blank">导出近7天 PDF</a>
+            <a href="{% url 'parent_export_weekly_pdf' %}?days=14" class="btn-ghost" style="display:inline-block;text-decoration:none;line-height:1.4;margin-left:8px" target="_blank">导出近14天 PDF</a>
+        </p>
+        <div class="trend-toolbar">
+            <span style="font-size: 13px; color: #666;">统计周期</span>
+            <button type="button" class="trend-days-btn active" data-days="7" onclick="loadMealReport(7)">近7天</button>
+            <button type="button" class="trend-days-btn" data-days="14" onclick="loadMealReport(14)">近14天</button>
+            <button type="button" class="trend-days-btn" data-days="30" onclick="loadMealReport(30)">近30天</button>
+        </div>
+        <div id="trendSummary" style="font-size: 13px; color: #555; margin-bottom: 12px;"></div>
+        <div class="trend-charts-grid">
+            <div class="trend-chart-card">
+                <div style="font-size: 12px; color: #666;">膳食：日热量与五色均分</div>
+                <div class="trend-chart-canvas-wrap"><canvas id="parentTrendChartMeals" aria-label="膳食趋势折线图"></canvas></div>
+            </div>
+            <div class="trend-chart-card">
+                <div style="font-size: 12px; color: #666;">运动习惯：已确认任务次数 · 步数</div>
+                <div class="trend-chart-canvas-wrap"><canvas id="parentTrendChartActivity" aria-label="任务与步数趋势图"></canvas></div>
+            </div>
+        </div>
+        <div class="trend-chart-sleep-wrap">
+            <div style="font-size: 12px; color: #666;">睡眠：记录总时长（小时，手环有数据才连线）</div>
+            <div class="trend-chart-canvas-wrap"><canvas id="parentTrendChartSleep" aria-label="睡眠时长趋势图"></canvas></div>
+        </div>
+        <p style="font-size: 12px; color: #999; margin-bottom: 8px;">五色分柱状速览（相对高度）</p>
+        <div id="trendBars" class="trend-bars"></div>
+    </div>
+</div>
+
+<form method="POST" action="{% url 'parent_switch_child' %}" id="switchChildForm">
+    {% csrf_token %}
+    <input type="hidden" name="child_id" value="{{ child.id }}" id="selectedChildId">
+</form>
+
+<div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; display: none; z-index: 3000;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+function switchChild(childId) {
+    document.getElementById('selectedChildId').value = childId;
+    document.getElementById('switchChildForm').submit();
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function destroyParentTrendCharts() {
+    const st = window.__parentTrendCharts;
+    if (!st) return;
+    ['meals', 'activity', 'sleep'].forEach(k => {
+        if (st[k]) { try { st[k].destroy(); } catch (e) {} st[k] = null; }
+    });
+}
+
+function loadMealReport(days) {
+    document.querySelectorAll('.trend-days-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.days, 10) === days);
+    });
+    fetch('/parent/meal-report/?days=' + days)
+        .then(r => r.json())
+        .then(data => {
+            const sum = document.getElementById('trendSummary');
+            const bars = document.getElementById('trendBars');
+            destroyParentTrendCharts();
+            if (!data.success || !data.report) { sum.textContent = '暂无数据'; if (bars) bars.innerHTML = ''; return; }
+            const rep = data.report;
+            const ds = rep.daily_scores || [];
+            const daysN = ds.length || 1;
+            const avgKcal = rep.total_calories / daysN;
+            let extra = '';
+            if (rep.total_tasks_completed != null) extra += ' 已确认习惯任务 <strong>' + rep.total_tasks_completed + '</strong> 次';
+            if (rep.avg_daily_steps != null) extra += '；有手环步数的天数内日均约 <strong>' + rep.avg_daily_steps + '</strong> 步';
+            sum.innerHTML = rep.period + ' 累计热量约 <strong>' + Math.round(rep.total_calories) + '</strong> kcal，' + '日均约 <strong>' + avgKcal.toFixed(0) + '</strong> kcal；' + '日均五色分 <strong>' + rep.avg_daily_score + '</strong>；蛋白累计 <strong>' + rep.total_protein.toFixed(0) + '</strong> g。' + extra;
+
+            let bh = '';
+            const maxS = 5;
+            ds.forEach(d => {
+                const h = Math.max(4, Math.round((d.score / maxS) * 100));
+                const md = d.date.slice(5);
+                bh += '<div class="trend-bar-col"><div class="trend-bar" style="height:' + h + 'px" title="' + d.date + ' 分' + d.score + ' 餐' + d.meal_count + '"></div><span class="trend-date">' + md + '</span></div>';
+            });
+            if (bars) bars.innerHTML = bh || '<span style="color:#999;font-size:13px">该时段无餐次记录</span>';
+
+            const labels = ds.map(d => d.date.slice(5));
+            const calData = ds.map(d => (d.meal_count > 0 || d.day_calories > 0) ? Number(d.day_calories) : null);
+            const scoreData = ds.map(d => (d.meal_count > 0 ? Number(d.score) : null));
+            const tasksData = ds.map(d => Number(d.tasks_completed || 0));
+            const stepsData = ds.map(d => (d.steps != null && d.steps !== '') ? Number(d.steps) : null);
+            const sleepH = ds.map(d => { if (d.sleep_duration_minutes == null || d.sleep_duration_minutes === '') return null; return Math.round((Number(d.sleep_duration_minutes) / 60) * 10) / 10; });
+
+            if (typeof Chart === 'undefined') return;
+            if (!window.__parentTrendCharts) window.__parentTrendCharts = { meals: null, activity: null, sleep: null };
+            const axisFont = { size: 11 };
+            const gridSoft = { color: 'rgba(0,0,0,0.06)' };
+            const commonOpts = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: axisFont } } } };
+
+            const ctx1 = document.getElementById('parentTrendChartMeals');
+            if (ctx1) {
+                window.__parentTrendCharts.meals = new Chart(ctx1, {
+                    type: 'line', data: { labels, datasets: [{ label: '日热量 (kcal)', data: calData, yAxisID: 'y', borderColor: '#FF9800', backgroundColor: 'rgba(255,152,0,0.12)', fill: true, tension: 0.25, spanGaps: false, pointRadius: 3 }, { label: '五色均分', data: scoreData, yAxisID: 'y1', borderColor: '#1976D2', backgroundColor: 'transparent', tension: 0.25, spanGaps: false, pointRadius: 3 }] },
+                    options: { ...commonOpts, scales: { x: { ticks: { font: axisFont, maxRotation: 45, minRotation: 0 }, grid: gridSoft }, y: { type: 'linear', position: 'left', title: { display: true, text: 'kcal', font: axisFont }, grid: gridSoft, beginAtZero: true }, y1: { type: 'linear', position: 'right', min: 0, max: 5, title: { display: true, text: '分', font: axisFont }, grid: { drawOnChartArea: false } } } }
+                });
+            }
+            const ctx2 = document.getElementById('parentTrendChartActivity');
+            if (ctx2) {
+                window.__parentTrendCharts.activity = new Chart(ctx2, {
+                    type: 'line', data: { labels, datasets: [{ label: '已确认任务 (次/日)', data: tasksData, yAxisID: 'y', borderColor: '#43A047', backgroundColor: 'rgba(67,160,71,0.12)', fill: true, stepped: false, tension: 0.2, pointRadius: 3 }, { label: '步数', data: stepsData, yAxisID: 'y1', borderColor: '#7B1FA2', backgroundColor: 'transparent', tension: 0.25, spanGaps: true, pointRadius: 2 }] },
+                    options: { ...commonOpts, scales: { x: { ticks: { font: axisFont, maxRotation: 45 }, grid: gridSoft }, y: { type: 'linear', position: 'left', title: { display: true, text: '任务', font: axisFont }, grid: gridSoft, beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }, y1: { type: 'linear', position: 'right', title: { display: true, text: '步', font: axisFont }, grid: { drawOnChartArea: false }, beginAtZero: true } } }
+                });
+            }
+            const ctx3 = document.getElementById('parentTrendChartSleep');
+            if (ctx3) {
+                window.__parentTrendCharts.sleep = new Chart(ctx3, {
+                    type: 'line', data: { labels, datasets: [{ label: '睡眠 (小时)', data: sleepH, borderColor: '#5C6BC0', backgroundColor: 'rgba(92,107,192,0.15)', fill: true, tension: 0.3, spanGaps: true, pointRadius: 3 }] },
+                    options: { ...commonOpts, scales: { x: { ticks: { font: axisFont, maxRotation: 45 }, grid: gridSoft }, y: { beginAtZero: true, title: { display: true, text: '小时', font: axisFont }, grid: gridSoft } } }
+                });
+            }
+        })
+        .catch(() => showToast('报告加载失败'));
+}
+
+document.addEventListener('DOMContentLoaded', function() { loadMealReport(7); });
+</script>
+{% endblock %}

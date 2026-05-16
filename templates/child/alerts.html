@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}童视智圈 - 预警{% endblock %}
+
+{% block header %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-logo">
+            <span class="icon icon-leaf" style="font-size: 28px;"></span>
+            小勇士健康管理系统
+        </div>
+        <nav class="header-nav">
+            <a href="{% url 'child_dashboard' %}">首页</a>
+            <a href="{% url 'child_health' %}">手环</a>
+            <a href="{% url 'child_meals' %}">膳食</a>
+            <a href="{% url 'child_tasks' %}">任务</a>
+            <a href="{% url 'child_challenges' %}">挑战</a>
+            <a href="{% url 'child_badges_page' %}">徽章</a>
+            <a href="{% url 'child_encouragements' %}">鼓励</a>
+            <a href="{% url 'child_alerts' %}" class="active">预警</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="header-user">
+            <span class="icon icon-user"></span>
+            {{ child.nickname }}
+        </div>
+        <a href="{% url 'logout' %}" class="header-logout">退出</a>
+    </div>
+</header>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .child-container {
+        width: 100%;
+        padding: 0;
+        padding-top: 60px;
+        background: #f0f2f5;
+        min-height: 100vh;
+    }
+
+    .child-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .child-section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 20px 30px;
+        margin-bottom: 0;
+    }
+
+    .child-alerts-section {
+        background: white;
+        border-radius: 16px;
+        padding: 22px 24px;
+        margin-bottom: 16px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .child-alerts-section h3 {
+        margin: 0 0 6px;
+        font-size: 18px;
+        color: #333;
+    }
+
+    .child-alerts-section .alerts-sub {
+        font-size: 13px;
+        color: #888;
+        margin: 0 0 14px;
+        line-height: 1.5;
+    }
+
+    .child-alert-row {
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border-left: 4px solid #c62828;
+        background: #fff8f8;
+        font-size: 14px;
+    }
+
+    .child-alert-row.read {
+        border-left-color: #bdbdbd;
+        background: #fafafa;
+    }
+
+    .child-alert-row.medical {
+        border-left-color: #1565c0;
+        background: #f3f8ff;
+    }
+
+    .child-alert-meta {
+        font-size: 12px;
+        color: #888;
+        margin-bottom: 6px;
+    }
+
+    .btn-apply {
+        background: linear-gradient(135deg, #4CAF50, #81C784);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="child-container">
+    <div class="page-header">
+        <div style="font-size: 24px; font-weight: bold;">
+            <span class="icon icon-warning"></span> 健康预警
+        </div>
+    </div>
+
+    <div class="child-section" id="sec-child-alerts">
+        <h3 class="child-section-title">预警列表</h3>
+        <div id="childAlertsList"><p style="color:#999;font-size:14px;">加载中…</p></div>
+    </div>
+</div>
+
+<div id="toast" class="toast" style="display: none;"></div>
+
+<script>
+function escapeHtmlChild(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 2000);
+}
+
+function loadChildAlerts() {
+    const host = document.getElementById('childAlertsList');
+    if (!host) return;
+    fetch('/child/alerts/?limit=30')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                host.innerHTML = '<p style="color:#999">' + escapeHtmlChild(data.message || '无法加载') + '</p>';
+                return;
+            }
+            if (!data.alerts || !data.alerts.length) {
+                host.innerHTML = '<p style="color:#999;font-size:14px;">暂无预警。好好吃饭，继续加油～</p>';
+                return;
+            }
+            let html = '';
+            data.alerts.forEach(a => {
+                const read = a.is_read ? ' read' : '';
+                const med = (a.type === 'medical') ? ' medical' : '';
+                const btn = a.is_read ? '' : '<button type="button" class="btn-apply" style="margin-top:8px;padding:6px 14px;font-size:13px;" onclick="markChildAlertRead(' + a.id + ')">标记已读</button>';
+                html += '<div class="child-alert-row' + read + med + '" data-aid="' + a.id + '">' +
+                    '<div class="child-alert-meta">' + escapeHtmlChild(a.created_at) + ' · ' + (a.type === 'allergy' ? '过敏' : '医嘱') + '</div>' +
+                    '<div style="font-weight:600;color:#333;">' + escapeHtmlChild(a.title) + '</div>' +
+                    '<div style="margin-top:6px;color:#444;line-height:1.5;">' + escapeHtmlChild(a.message) + '</div>' + btn + '</div>';
+            });
+            host.innerHTML = html;
+        })
+        .catch(() => { host.innerHTML = '<p style="color:#f44336;font-size:14px;">加载失败</p>'; });
+}
+
+function markChildAlertRead(id) {
+    fetch('/child/alerts/' + id + '/read/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) return;
+        const row = document.querySelector('.child-alert-row[data-aid="' + id + '"]');
+        if (row) {
+            row.classList.add('read');
+            const b = row.querySelector('button');
+            if (b) b.remove();
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadChildAlerts();
+});
+</script>
+{% endblock %}

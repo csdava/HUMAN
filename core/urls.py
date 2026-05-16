@@ -21,6 +21,15 @@ urlpatterns = [
     path('child/badges/', views.child_badges, name='child_badges'),
     path('child/update-avatar/', views.child_update_avatar, name='child_update_avatar'),
 
+    # Child standalone pages
+    path('child/health/', views.child_health, name='child_health'),
+    path('child/meals/', views.child_meals, name='child_meals'),
+    path('child/tasks/', views.child_tasks, name='child_tasks'),
+    path('child/challenges/', views.child_challenges, name='child_challenges'),
+    path('child/badges-page/', views.child_badges_page, name='child_badges_page'),
+    path('child/encouragements/', views.child_encouragements, name='child_encouragements'),
+    path('child/alerts-page/', views.child_alerts_page, name='child_alerts'),
+
     # YOLO 膳食识别 API (预留接口)
     path('api/yolo/recognize/', views.yolo_recognize_food, name='yolo_recognize_food'),
 
@@ -34,6 +43,12 @@ urlpatterns = [
 
     # 家长端（建议仅由负责家长端的同事修改本块，避免与儿童端/学校端冲突）
     path('parent/', views.parent_dashboard, name='parent_dashboard'),
+    path('parent/meals/', views.parent_meals, name='parent_meals'),
+    path('parent/trends/', views.parent_trends, name='parent_trends'),
+    path('parent/tasks/', views.parent_tasks, name='parent_tasks'),
+    path('parent/health-data/', views.parent_health_data, name='parent_health_data'),
+    path('parent/encourage/', views.parent_encourage, name='parent_encourage'),
+    path('parent/settings/', views.parent_settings, name='parent_settings'),
     path('parent/switch-child/', views.parent_switch_child, name='parent_switch_child'),
     path('parent/confirm-task/<int:record_id>/', views.parent_confirm_task, name='parent_confirm_task'),
     path('parent/add-manual-task/', views.parent_add_manual_task, name='parent_add_manual_task'),
@@ -51,6 +66,7 @@ urlpatterns = [
     path('parent/recipes/', views.parent_recipes, name='parent_recipes'),
     path('parent/recipes/add/', views.parent_recipe_create, name='parent_recipe_create'),
     path('parent/recipes/batch-import/', views.parent_recipe_batch_import, name='parent_recipe_batch_import'),
+    path('parent/recipes/delete/<int:recipe_id>/', views.parent_recipe_delete, name='parent_recipe_delete'),
     path('parent/meal-report/', views.parent_meal_report, name='parent_meal_report'),
     path('parent/export-weekly-pdf/', views.parent_export_weekly_pdf, name='parent_export_weekly_pdf'),
     path('parent/add-to-class/', views.parent_add_to_class, name='parent_add_to_class'),

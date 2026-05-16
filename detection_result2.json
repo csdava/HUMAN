@@ -1,0 +1,22 @@
+{
+  "vegetable": [
+    {
+      "name": "无检测结果",
+      "conf": 0
+    }
+  ],
+  "fruit": [
+    {
+      "name": "watermelon",
+      "conf": 0.907
+    },
+    {
+      "name": "watermelon",
+      "conf": 0.875
+    },
+    {
+      "name": "watermelon",
+      "conf": 0.741
+    }
+  ]
+}

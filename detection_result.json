@@ -1,0 +1,26 @@
+{
+  "vegetable": [
+    {
+      "name": "bell pepper",
+      "conf": 0.3263344168663025
+    },
+    {
+      "name": "pumpkin",
+      "conf": 0.2531432807445526
+    }
+  ],
+  "fruit": [
+    {
+      "name": "watermelon",
+      "conf": 0.9067554473876953
+    },
+    {
+      "name": "watermelon",
+      "conf": 0.8753265738487244
+    },
+    {
+      "name": "watermelon",
+      "conf": 0.7405186891555786
+    }
+  ]
+}

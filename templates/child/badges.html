@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}童视智圈 - 徽章{% endblock %}
+
+{% block header %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-logo">
+            <span class="icon icon-leaf" style="font-size: 28px;"></span>
+            小勇士健康管理系统
+        </div>
+        <nav class="header-nav">
+            <a href="{% url 'child_dashboard' %}">首页</a>
+            <a href="{% url 'child_health' %}">手环</a>
+            <a href="{% url 'child_meals' %}">膳食</a>
+            <a href="{% url 'child_tasks' %}">任务</a>
+            <a href="{% url 'child_challenges' %}">挑战</a>
+            <a href="{% url 'child_badges_page' %}" class="active">徽章</a>
+            <a href="{% url 'child_encouragements' %}">鼓励</a>
+            <a href="{% url 'child_alerts' %}">预警</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="header-user">
+            <span class="icon icon-user"></span>
+            {{ child.nickname }}
+        </div>
+        <a href="{% url 'logout' %}" class="header-logout">退出</a>
+    </div>
+</header>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .child-container {
+        width: 100%;
+        padding: 0;
+        padding-top: 60px;
+        background: #f0f2f5;
+        min-height: 100vh;
+    }
+
+    .child-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .child-section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 20px 30px;
+        margin-bottom: 0;
+    }
+
+    .badges-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+
+    .badges-grid {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .badge-item {
+        width: 80px;
+        height: 80px;
+        background: #f9f9f9;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #666;
+        position: relative;
+        gap: 5px;
+    }
+
+    .badge-item .badge-icon {
+        font-size: 32px;
+    }
+
+    .badge-item.earned {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #333;
+    }
+
+    .badge-item.earned::after {
+        content: '✓';
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        background: #4CAF50;
+        color: white;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .badge-item.locked {
+        opacity: 0.5;
+    }
+
+    .badge-name {
+        font-size: 11px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="child-container">
+    <div class="page-header">
+        <div style="font-size: 24px; font-weight: bold;">
+            <span class="icon icon-medal"></span> 我的徽章
+        </div>
+    </div>
+
+    <div class="child-section">
+        <h3 class="child-section-title">已获得徽章</h3>
+        <div class="badges-grid">
+            {% for eb in earned %}
+            <div class="badge-item earned" title="{{ eb.badge.name }}">
+                <span class="badge-icon icon icon-medal"></span>
+                <span class="badge-name">{{ eb.badge.name }}</span>
+            </div>
+            {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">
+                <p>暂无已获得徽章，继续努力！</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="child-section">
+        <h3 class="child-section-title">未解锁徽章</h3>
+        <div class="badges-grid">
+            {% for b in all_badges %}
+            {% if b not in earned %}
+            <div class="badge-item locked" title="{{ b.name }}{% if b.requirement %}: {{ b.requirement }}{% endif %}">
+                <span class="badge-icon icon icon-medal"></span>
+                <span class="badge-name">{{ b.name }}</span>
+            </div>
+            {% endif %}
+            {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">
+                <p>所有徽章已解锁！</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

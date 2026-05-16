@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -tlnp)",
+      "Bash(xargs -r kill -9)",
+      "Bash(CONDA_NO_PLUGINS=true conda run -n yolo_gpu python start_server.py)",
+      "Bash(CONDA_NO_PLUGINS=true conda run -n yolo_gpu python D:/User/Documents/PycharmProjects/human/test_detection4.py)",
+      "Bash(awk '{print $7}')",
+      "Bash(tasklist /FI \"IMAGENAME eq python.exe\")",
+      "Bash(awk '{print $6, $7, $8}')",
+      "Bash(netstat -ano)",
+      "Bash(CONDA_NO_PLUGINS=true conda run -n yolo_gpu python D:/User/Documents/PycharmProjects/human/test_detection5.py)",
+      "Bash(CONDA_NO_PLUGINS=true conda run -n yolo_gpu python D:/User/Documents/PycharmProjects/human/test_detection6.py)",
+      "Bash(CONDA_NO_PLUGINS=true conda run -n yolo_gpu python D:/User/Documents/PycharmProjects/human/test_detection7.py)",
+      "Bash(awk '{print $5}')",
+      "Bash(python -c \"from django.template.loader import get_template; t = get_template\\('parent/dashboard.html'\\); print\\(t.origin\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(findstr /n \"概览\")",
+      "Bash(taskkill //F //PID 18400)",
+      "Bash(cd /d \"d:\\\\User\\\\Documents\\\\PycharmProjects\\\\human\")",
+      "Bash(python -c \"import core.urls\")",
+      "Bash(python -c \"import core.urls; print\\('OK'\\)\")",
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(python -c \"from ultralytics import YOLO; print\\('ultralytics OK'\\)\")"
+    ]
+  }
+}

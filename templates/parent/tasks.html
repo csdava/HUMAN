@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}健康任务 · 家庭端{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-container { width: 100%; padding: 0; background: #f0f2f5; min-height: 100vh; }
+    .page-header { background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 20px 30px; }
+    .page-header h1 { font-size: 22px; margin-bottom: 5px; }
+    .section { background: white; padding: 20px; margin: 16px; border-radius: 12px; }
+    .section-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+    .child-tab { padding: 10px 20px; background: #f0f0f0; border-radius: 20px; cursor: pointer; transition: all 0.3s; display: inline-block; margin: 4px; }
+    .child-tab:hover, .child-tab.active { background: #2196F3; color: white; }
+    .task-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px; }
+    .task-info { display: flex; align-items: center; gap: 12px; }
+    .task-icon { font-size: 28px; }
+    .task-details h4 { font-size: 16px; color: #333; margin-bottom: 4px; }
+    .task-time { font-size: 12px; color: #999; }
+    .btn-confirm { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .btn-confirm:hover { background: #388E3C; }
+    .btn-add { background: #FF9800; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
+    .manual-add { display: flex; gap: 10px; margin-bottom: 15px; }
+    .manual-add select { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+    .empty-state { text-align: center; padding: 30px; color: #999; }
+    .empty-state-icon { font-size: 48px; margin-bottom: 10px; }
+    details.parent-details { background: white; border-radius: 12px; margin: 16px; padding: 0 20px 16px; }
+    details.parent-details > summary { cursor: pointer; font-weight: bold; padding: 18px 0; list-style: none; }
+    details.parent-details > summary::-webkit-details-marker { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1>健康任务</h1>
+    </div>
+
+    {% if children|length > 1 %}
+    <div class="section" style="margin: 16px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            {% for c in children %}
+            <div class="child-tab {% if c.id == child.id %}active{% endif %}" onclick="switchChild({{ c.id }})">
+                {% if c.gender == 'M' %}<span class="icon icon-male"></span>{% else %}<span class="icon icon-female"></span>{% endif %} {{ c.nickname }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <details class="parent-details" {% if pending_tasks %}open{% endif %}>
+        <summary>待确认任务</summary>
+        <div class="section" style="box-shadow: none; padding: 0; margin: 0;">
+            <div id="pendingTaskHost">
+                {% if pending_tasks %}
+                <div class="task-list" id="pendingTaskList">
+                    {% for record in pending_tasks %}
+                    <div class="task-item" data-record-id="{{ record.id }}">
+                        <div class="task-info">
+                            <div class="task-icon">{{ record.task.icon }}</div>
+                            <div class="task-details">
+                                <h4>{{ record.task.name }}</h4>
+                                <div class="task-time">{{ record.submitted_at|timesince }}前提交</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-confirm" onclick="confirmTask({{ record.id }}, this)"><span class="icon icon-check"></span> 确认</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state" id="pendingEmpty">
+                    <div class="empty-state-icon"><span class="icon icon-star-empty"></span></div>
+                    <p>太棒了！暂无待确认任务</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="section" style="box-shadow: none; padding: 0; margin: 16px 0 0;">
+            <h3 class="section-title" style="font-size: 16px;">手动补充任务</h3>
+            <div class="manual-add">
+                <select id="manualTaskType">
+                    <option value="">请选择任务类型</option>
+                    <option value="veggie">吃够5种蔬菜</option>
+                    <option value="exercise">户外运动30分钟</option>
+                    <option value="sleep">早睡打卡</option>
+                    <option value="wash">洗手20秒</option>
+                </select>
+                <button type="button" class="btn-add" onclick="addManualTask()">直接确认</button>
+            </div>
+        </div>
+    </details>
+</div>
+
+<form method="POST" action="{% url 'parent_switch_child' %}" id="switchChildForm">
+    {% csrf_token %}
+    <input type="hidden" name="child_id" value="{{ child.id }}" id="selectedChildId">
+</form>
+
+<div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; display: none; z-index: 3000;"></div>
+
+<script>
+function switchChild(childId) {
+    document.getElementById('selectedChildId').value = childId;
+    document.getElementById('switchChildForm').submit();
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function confirmTask(recordId, btn) {
+    fetch('/parent/confirm-task/' + recordId + '/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken')}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast('确认成功');
+            const row = btn.closest('.task-item');
+            if (row) row.remove();
+            const list = document.getElementById('pendingTaskList');
+            if (list && list.children.length === 0) {
+                document.getElementById('pendingTaskHost').innerHTML = '<div class="empty-state" id="pendingEmpty"><div class="empty-state-icon"><span class="icon icon-star-empty"></span></div><p>太棒了！暂无待确认任务</p></div>';
+            }
+        } else { showToast(data.message); }
+    });
+}
+
+function addManualTask() {
+    const taskCode = document.getElementById('manualTaskType').value;
+    if (!taskCode) { showToast('请选择任务类型'); return; }
+    fetch('/parent/add-manual-task/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'task_code=' + encodeURIComponent(taskCode)
+    })
+    .then(r => r.json())
+    .then(data => { showToast(data.message); if (data.success && data.upgraded) showToast('孩子升级了！'); });
+}
+
+document.addEventListener('DOMContentLoaded', function() {});
+</script>
+{% endblock %}

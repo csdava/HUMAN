@@ -344,7 +344,7 @@ def register_child(request):
 
 # ========== YOLO 膳食识别 API ==========
 
-# YOLO 类别到食材类别的映射
+# YOLO 类别到食材类别的映射（蔬菜模型）
 YOLO_CLASS_TO_FOOD = {
     'avocado': {'name': '牛油果', 'category': 'fruit', 'color': 'blue', 'protein': 2.0, 'carbohydrate': 9.0, 'fat': 15.0, 'calories': 160},
     'beans': {'name': '豆角', 'category': 'vegetable', 'color': 'green', 'protein': 2.0, 'carbohydrate': 7.0, 'fat': 0.1, 'calories': 31},
@@ -372,6 +372,26 @@ YOLO_CLASS_TO_FOOD = {
     'squash-patisson': {'name': '西葫芦', 'category': 'vegetable', 'color': 'green', 'protein': 1.2, 'carbohydrate': 4.0, 'fat': 0.2, 'calories': 18},
     'tomato': {'name': '番茄', 'category': 'vegetable', 'color': 'green', 'protein': 0.9, 'carbohydrate': 4.0, 'fat': 0.2, 'calories': 19},
     'vegetable marrow': {'name': '节瓜', 'category': 'vegetable', 'color': 'green', 'protein': 0.7, 'carbohydrate': 3.0, 'fat': 0.1, 'calories': 13},
+}
+
+# YOLO 水果模型类别映射
+YOLO_FRUIT_CLASS_TO_FOOD = {
+    'Blueberries': {'name': '蓝莓', 'category': 'fruit', 'color': 'blue', 'protein': 0.7, 'carbohydrate': 14.0, 'fat': 0.3, 'calories': 57},
+    'Hami Melon': {'name': '哈密瓜', 'category': 'fruit', 'color': 'orange', 'protein': 0.5, 'carbohydrate': 8.0, 'fat': 0.1, 'calories': 34},
+    'Mango': {'name': '芒果', 'category': 'fruit', 'color': 'orange', 'protein': 0.8, 'carbohydrate': 15.0, 'fat': 0.4, 'calories': 65},
+    'Sakya fruit': {'name': '释迦果', 'category': 'fruit', 'color': 'green', 'protein': 1.0, 'carbohydrate': 23.0, 'fat': 0.3, 'calories': 94},
+    'apple': {'name': '苹果', 'category': 'fruit', 'color': 'red', 'protein': 0.3, 'carbohydrate': 14.0, 'fat': 0.2, 'calories': 52},
+    'banana': {'name': '香蕉', 'category': 'fruit', 'color': 'yellow', 'protein': 1.1, 'carbohydrate': 23.0, 'fat': 0.3, 'calories': 89},
+    'grape': {'name': '葡萄', 'category': 'fruit', 'color': 'purple', 'protein': 0.6, 'carbohydrate': 17.0, 'fat': 0.3, 'calories': 67},
+    'guava': {'name': '番石榴', 'category': 'fruit', 'color': 'green', 'protein': 2.6, 'carbohydrate': 14.0, 'fat': 1.0, 'calories': 68},
+    'mangosteen': {'name': '山竹', 'category': 'fruit', 'color': 'purple', 'protein': 0.4, 'carbohydrate': 18.0, 'fat': 0.6, 'calories': 73},
+    'orange': {'name': '橙子', 'category': 'fruit', 'color': 'orange', 'protein': 0.9, 'carbohydrate': 12.0, 'fat': 0.1, 'calories': 47},
+    'pear': {'name': '梨', 'category': 'fruit', 'color': 'yellow', 'protein': 0.3, 'carbohydrate': 15.0, 'fat': 0.1, 'calories': 51},
+    'pineapple': {'name': '菠萝', 'category': 'fruit', 'color': 'yellow', 'protein': 0.5, 'carbohydrate': 13.0, 'fat': 0.1, 'calories': 50},
+    'pitaya': {'name': '火龙果', 'category': 'fruit', 'color': 'red', 'protein': 1.1, 'carbohydrate': 13.0, 'fat': 0.2, 'calories': 60},
+    'strawberry': {'name': '草莓', 'category': 'fruit', 'color': 'red', 'protein': 0.7, 'carbohydrate': 8.0, 'fat': 0.3, 'calories': 33},
+    'tomato': {'name': '番茄', 'category': 'vegetable', 'color': 'green', 'protein': 0.9, 'carbohydrate': 4.0, 'fat': 0.2, 'calories': 19},
+    'watermelon': {'name': '西瓜', 'category': 'fruit', 'color': 'red', 'protein': 0.6, 'carbohydrate': 8.0, 'fat': 0.2, 'calories': 30},
 }
 
 # 默认食材数据（用于未映射的类别）
@@ -423,75 +443,143 @@ def yolo_recognize_food(request):
     try:
         # 调用 YOLO 模型进行识别
         from ultralytics import YOLO
+        import logging
+        logger = logging.getLogger(__name__)
 
-        # 使用训练好的模型
-        model_path = 'D:/User/Documents/PycharmProjects/human/runs/vegetable_train_v2/weights/last.pt'
+        # 模型路径
+        vegetable_model_path = 'D:/User/Documents/PycharmProjects/human/runs/vegetable_train_v2/weights/last.pt'
+        fruit_model_path = 'D:/User/Documents/PycharmProjects/human/runs/fruit_train/weights/best.pt'
 
-        if os.path.exists(model_path):
-            model = YOLO(model_path)
-            # 运行推理 - 降低置信度阈值以获取更多检测结果
-            results = model.predict(source=tmp_path, imgsz=640, conf=0.25, verbose=False)
+        # 检查是否有可用模型
+        has_vegetable_model = os.path.exists(vegetable_model_path)
+        has_fruit_model = os.path.exists(fruit_model_path)
 
-            # 解析识别结果
-            recognized_foods = []
-            if results and len(results) > 0:
-                result = results[0]
-                # 调试：打印检测到的类别和置信度
-                print(f"[DEBUG] YOLO detection - boxes: {result.boxes is not None}, count: {len(result.boxes) if result.boxes is not None else 0}")
-                if result.boxes is not None and len(result.boxes) > 0:
-                    boxes = result.boxes
-                    class_ids = boxes.cls.cpu().numpy().astype(int)
-                    confidences = boxes.conf.cpu().numpy()
+        logger.warning(f"[YOLO] Vegetable model exists: {has_vegetable_model}, Fruit model exists: {has_fruit_model}")
 
-                    # 调试：打印所有检测结果
-                    for class_id, conf in zip(class_ids, confidences):
-                        class_name = result.names[class_id] if class_id < len(result.names) else 'unknown'
-                        print(f"[DEBUG] Detected: {class_name}, conf: {conf:.3f}")
-
-                    for class_id, conf in zip(class_ids, confidences):
-                        if class_id < len(result.names):
-                            class_name = result.names[class_id]
-                            if class_name in YOLO_CLASS_TO_FOOD:
-                                food_data = YOLO_CLASS_TO_FOOD[class_name]
-                                recognized_foods.append({
-                                    'name': food_data['name'],
-                                    'category': food_data['category'],
-                                    'color': food_data['color'],
-                                    'confidence': float(conf),
-                                    'protein': food_data['protein'],
-                                    'carbohydrate': food_data['carbohydrate'],
-                                    'fat': food_data['fat'],
-                                    'calories': food_data['calories'],
-                                })
-                            elif class_name not in YOLO_CLASS_TO_FOOD:
-                                # 未映射的类别，使用默认数据
-                                food_data = DEFAULT_FOOD_DATA.get('vegetable', DEFAULT_FOOD_DATA['vegetable'])
-                                recognized_foods.append({
-                                    'name': class_name.title(),
-                                    'category': food_data['category'],
-                                    'color': food_data['color'],
-                                    'confidence': float(conf),
-                                    **food_data
-                                })
-
-            # 去重（同一食材只保留一个）
-            unique_foods = {}
-            for food in recognized_foods:
-                key = food['category']
-                if key not in unique_foods or food['confidence'] > unique_foods[key]['confidence']:
-                    unique_foods[key] = food
-
-            recognized_foods = list(unique_foods.values())
-        else:
-            # 模型文件不存在，使用模拟数据
+        if not has_vegetable_model and not has_fruit_model:
+            # 模型文件都不存在，使用模拟数据
             recognized_foods = [
                 DEFAULT_FOOD_DATA['grain'],
                 DEFAULT_FOOD_DATA['vegetable'],
                 DEFAULT_FOOD_DATA['protein'],
             ]
+        else:
+            # 合并两个模型的识别结果
+            all_recognized_foods = []
+
+            # 蔬菜模型识别（降低置信度阈值以检测更多食材）
+            if has_vegetable_model:
+                model = YOLO(vegetable_model_path)
+                results = model.predict(source=tmp_path, imgsz=640, conf=0.15, verbose=False)
+                logger.warning(f"[YOLO] Vegetable model results: {len(results) if results else 0}")
+                if results and len(results) > 0:
+                    result = results[0]
+                    logger.warning(f"[YOLO] Vegetable model result.names: {result.names}")
+                    boxes = result.boxes
+                    logger.warning(f"[YOLO] Boxes object: {boxes}, is None: {boxes is None}")
+                    if boxes is not None:
+                        boxes_len = len(boxes)
+                        logger.warning(f"[YOLO] Boxes length: {boxes_len}")
+                        if boxes_len > 0:
+                            class_ids = boxes.cls.cpu().numpy().astype(int)
+                            confidences = boxes.conf.cpu().numpy()
+                            logger.warning(f"[YOLO] Class IDs: {class_ids}, Confidences: {confidences}")
+                            for class_id, conf in zip(class_ids, confidences):
+                                if class_id < len(result.names):
+                                    class_name = result.names[class_id]
+                                    logger.warning(f"[YOLO] Detected class: {class_name} (id={class_id}, conf={conf})")
+                                    # 首先检查是否在蔬菜模型映射中
+                                    if class_name in YOLO_CLASS_TO_FOOD:
+                                        food_data = YOLO_CLASS_TO_FOOD[class_name]
+                                        all_recognized_foods.append({
+                                            'name': food_data['name'],
+                                            'category': food_data['category'],
+                                            'color': food_data['color'],
+                                            'confidence': float(conf),
+                                            'protein': food_data['protein'],
+                                            'carbohydrate': food_data['carbohydrate'],
+                                            'fat': food_data['fat'],
+                                            'calories': food_data['calories'],
+                                            'source': 'vegetable'
+                                        })
+                                    else:
+                                        # 不在蔬菜映射中，检查水果映射
+                                        if class_name in YOLO_FRUIT_CLASS_TO_FOOD:
+                                            food_data = YOLO_FRUIT_CLASS_TO_FOOD[class_name]
+                                            all_recognized_foods.append({
+                                                'name': food_data['name'],
+                                                'category': food_data['category'],
+                                                'color': food_data['color'],
+                                                'confidence': float(conf),
+                                                'protein': food_data['protein'],
+                                                'carbohydrate': food_data['carbohydrate'],
+                                                'fat': food_data['fat'],
+                                                'calories': food_data['calories'],
+                                                'source': 'fruit'
+                                            })
+                                        else:
+                                            # 完全未映射，记录并使用默认数据
+                                            logger.warning(f"[YOLO] Unknown class '{class_name}', not in any mapping")
+                        else:
+                            logger.warning("[YOLO] Vegetable model detected 0 boxes")
+                    else:
+                        logger.warning("[YOLO] Vegetable model boxes is None")
+
+            # 水果模型识别
+            if has_fruit_model:
+                model = YOLO(fruit_model_path)
+                results = model.predict(source=tmp_path, imgsz=640, conf=0.25, verbose=False)
+                if results and len(results) > 0:
+                    result = results[0]
+                    if result.boxes is not None and len(result.boxes) > 0:
+                        boxes = result.boxes
+                        class_ids = boxes.cls.cpu().numpy().astype(int)
+                        confidences = boxes.conf.cpu().numpy()
+                        for class_id, conf in zip(class_ids, confidences):
+                            if class_id < len(result.names):
+                                class_name = result.names[class_id]
+                                if class_name in YOLO_FRUIT_CLASS_TO_FOOD:
+                                    food_data = YOLO_FRUIT_CLASS_TO_FOOD[class_name]
+                                    all_recognized_foods.append({
+                                        'name': food_data['name'],
+                                        'category': food_data['category'],
+                                        'color': food_data['color'],
+                                        'confidence': float(conf),
+                                        'protein': food_data['protein'],
+                                        'carbohydrate': food_data['carbohydrate'],
+                                        'fat': food_data['fat'],
+                                        'calories': food_data['calories'],
+                                        'source': 'fruit'
+                                    })
+
+            # 去重（按食材名称去重，保留高置信度结果）
+            unique_foods = {}
+            for food in all_recognized_foods:
+                key = food['name']
+                if key not in unique_foods or food['confidence'] > unique_foods[key]['confidence']:
+                    unique_foods[key] = food
+
+            recognized_foods = list(unique_foods.values())
+
+            # 如果没有识别到任何食材，记录警告并使用默认数据
+            if not recognized_foods:
+                logger.warning("[YOLO] No foods recognized from models. All recognized: " + str(all_recognized_foods))
+                recognized_foods = [
+                    DEFAULT_FOOD_DATA['grain'],
+                    DEFAULT_FOOD_DATA['vegetable'],
+                    DEFAULT_FOOD_DATA['protein'],
+                ]
+            else:
+                logger.warning(f"[YOLO] Recognized {len(recognized_foods)} foods: {[f['name'] for f in recognized_foods]}")
 
     except Exception as e:
+        import sys
+        import traceback
         print(f"YOLO识别错误: {e}")
+        traceback.print_exc()
+        # 检查是否是 torch 缺失问题
+        if 'torch' in str(e) or 'cuda' in str(e).lower():
+            print(f"[YOLO] Torch/CUDA error - torch may not be installed in Python {sys.version}")
         # 识别失败时使用模拟数据
         recognized_foods = [
             DEFAULT_FOOD_DATA['grain'],
@@ -660,6 +748,134 @@ def yolo_recognize_food(request):
 
 
 @login_required
+@login_required
+def child_health(request):
+    """儿童端手环数据页"""
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return render(request, 'child/health.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+        })
+    return render(request, 'child/health.html', {'child': child})
+
+
+@login_required
+def child_meals(request):
+    """儿童端膳食页"""
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return render(request, 'child/meals.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+        })
+    today = timezone.now().date()
+    today_meals = MealRecord.objects.filter(child=child, date=today).prefetch_related('food_items__food')
+    allergy_tags = child.allergy_tags or []
+    for meal in today_meals:
+        meal.allergy_hits = []
+        if allergy_tags:
+            food_names = [str(fi.food.name) for fi in meal.food_items.all()]
+            for tag in allergy_tags:
+                tag = (str(tag) or "").strip()
+                if not tag:
+                    continue
+                for fname in food_names:
+                    if tag in fname:
+                        meal.allergy_hits.append({'tag': tag, 'food': fname})
+                        break
+    return render(request, 'child/meals.html', {
+        'child': child,
+        'today': today,
+        'today_meals': today_meals,
+    })
+
+
+@login_required
+def child_tasks(request):
+    """儿童端任务页"""
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return render(request, 'child/tasks.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+        })
+    today = timezone.now().date()
+    tasks = Task.objects.all()
+    task_records = TaskRecord.objects.filter(child=child, date=today)
+    task_status = {tr.task.code: tr.status for tr in task_records}
+    daily_records = []
+    for task in tasks:
+        status = task_status.get(task.code, 'pending')
+        record, created = TaskRecord.objects.get_or_create(
+            child=child, task=task, date=today,
+            defaults={'status': 'pending'}
+        )
+        if created:
+            status = 'pending'
+        else:
+            status = record.status
+        daily_records.append({
+            'task': task,
+            'record': record,
+            'status': status
+        })
+    return render(request, 'child/tasks.html', {
+        'child': child,
+        'daily_records': daily_records,
+    })
+
+
+@login_required
+def child_challenges(request):
+    """儿童端挑战页"""
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return render(request, 'child/challenges.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+        })
+    active_challenges = []
+    for progress in ChallengeProgress.objects.filter(child=child, is_completed=False).select_related('challenge'):
+        if progress.challenge.status == 'active':
+            progress.percent = int(progress.current_value / progress.challenge.target_value * 100)
+            active_challenges.append(progress)
+    return render(request, 'child/challenges.html', {
+        'child': child,
+        'active_challenges': active_challenges,
+    })
+
+
+@login_required
+def child_encouragements(request):
+    """儿童端鼓励页"""
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return render(request, 'child/encouragements.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+        })
+    encouragements = Encouragement.objects.filter(
+        child=child
+    ).order_by('-created_at')[:20]
+    return render(request, 'child/encouragements.html', {
+        'child': child,
+        'encouragements': encouragements,
+    })
+
+
+@login_required
+def child_alerts_page(request):
+    """儿童端预警页"""
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return render(request, 'child/alerts.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+        })
+    return render(request, 'child/alerts.html', {'child': child})
+
+
 def child_meal_history(request):
     """儿童膳食历史"""
     child = Child.objects.filter(user=request.user).first()
@@ -756,6 +972,24 @@ def child_badges(request):
         'locked': [{'id': b.id, 'name': b.name, 'icon': b.icon,
                     'description': b.description, 'requirement': b.requirement}
                    for b in all_badges if b not in [eb.badge for eb in earned]]
+    })
+
+
+@login_required
+def child_badges_page(request):
+    """儿童端徽章页"""
+    child = Child.objects.filter(user=request.user).first()
+    if not child:
+        return render(request, 'child/badges.html', {
+            'error': '未找到关联的儿童账户',
+            'child': None,
+        })
+    earned = ChildBadge.objects.filter(child=child).select_related('badge')
+    all_badges = Badge.objects.all()
+    return render(request, 'child/badges.html', {
+        'child': child,
+        'earned': earned,
+        'all_badges': all_badges,
     })
 
 
@@ -958,6 +1192,136 @@ def parent_dashboard(request):
         'parent_alerts_unread': parent_alerts_unread,
         'children_class_map': children_class_map,
         'school_challenges': school_challenges,
+    })
+
+
+def _get_parent_child(request):
+    """获取当前选中的孩子"""
+    children = Child.objects.filter(parent=request.user)
+    if not children.exists():
+        return None
+    selected_id = request.session.get('selected_child_id')
+    if selected_id:
+        child = children.filter(id=selected_id).first()
+        if not child:
+            child = children.first()
+    else:
+        child = children.first()
+    return child
+
+
+@login_required
+def parent_meals(request):
+    """家长端 - 膳食记录页面"""
+    child = _get_parent_child(request)
+    if not child:
+        return render(request, 'parent/bind_child.html')
+
+    today = timezone.now().date()
+    today_meals = MealRecord.objects.filter(child=child, date=today).prefetch_related('food_items__food')
+    today_meal_totals = {'kcal': 0.0, 'protein': 0.0, 'carb': 0.0, 'fat': 0.0, 'count': 0}
+    for m in today_meals:
+        today_meal_totals['kcal'] += float(m.total_calories or 0)
+        today_meal_totals['protein'] += float(m.total_protein or 0)
+        today_meal_totals['carb'] += float(m.total_carbohydrate or 0)
+        today_meal_totals['fat'] += float(m.total_fat or 0)
+        today_meal_totals['count'] += 1
+
+    return render(request, 'parent/meals.html', {
+        'child': child,
+        'today_meals': today_meals,
+        'today_meal_totals': today_meal_totals,
+        'children': Child.objects.filter(parent=request.user),
+    })
+
+
+@login_required
+def parent_trends(request):
+    """家长端 - 健康趋势页面"""
+    child = _get_parent_child(request)
+    if not child:
+        return render(request, 'parent/bind_child.html')
+
+    return render(request, 'parent/trends.html', {
+        'child': child,
+        'children': Child.objects.filter(parent=request.user),
+    })
+
+
+@login_required
+def parent_tasks(request):
+    """家长端 - 健康任务页面"""
+    child = _get_parent_child(request)
+    if not child:
+        return render(request, 'parent/bind_child.html')
+
+    today = timezone.now().date()
+    pending_tasks = TaskRecord.objects.filter(
+        child=child, date=today, status='pending'
+    ).select_related('task')
+
+    return render(request, 'parent/tasks.html', {
+        'child': child,
+        'pending_tasks': pending_tasks,
+        'children': Child.objects.filter(parent=request.user),
+    })
+
+
+@login_required
+def parent_health_data(request):
+    """家长端 - 手环数据页面"""
+    child = _get_parent_child(request)
+    if not child:
+        return render(request, 'parent/bind_child.html')
+
+    return render(request, 'parent/health_data.html', {
+        'child': child,
+        'children': Child.objects.filter(parent=request.user),
+    })
+
+
+@login_required
+def parent_encourage(request):
+    """家长端 - 鼓励语页面"""
+    child = _get_parent_child(request)
+    if not child:
+        return render(request, 'parent/bind_child.html')
+
+    encouragements = Encouragement.objects.filter(
+        sender=request.user, child=child
+    ).order_by('-created_at')[:15]
+
+    return render(request, 'parent/encourage.html', {
+        'child': child,
+        'encouragements': encouragements,
+        'children': Child.objects.filter(parent=request.user),
+    })
+
+
+@login_required
+def parent_settings(request):
+    """家长端 - 设置页面"""
+    child = _get_parent_child(request)
+    if not child:
+        return render(request, 'parent/bind_child.html')
+
+    children = Child.objects.filter(parent=request.user)
+    children_class_map = {}
+    for c in children:
+        rows = []
+        for e in ClassStudent.objects.filter(child=c).select_related('teacher__user', 'teacher__school'):
+            rows.append({
+                'teacher_id': e.teacher_id,
+                'school': e.teacher.school.name,
+                'class_name': e.teacher.class_name,
+                'teacher_name': e.teacher.user.username,
+            })
+        children_class_map[str(c.id)] = rows
+
+    return render(request, 'parent/settings.html', {
+        'child': child,
+        'children': children,
+        'children_class_map': children_class_map,
     })
 
 
@@ -1418,8 +1782,14 @@ def parent_recipes(request):
     target_nutrient = (request.GET.get('target') or '').strip()
     fill_gaps = request.GET.get('fill_gaps') == '1'
     limit = max(1, min(80, int(request.GET.get('limit', 30))))
+    recipe_id = request.GET.get('id')
+    force_json = request.GET.get('format') == 'json'
+    is_html = not force_json and (request.GET.get('html') == '1' or 'text/html' in request.headers.get('Accept', ''))
 
     recipes = Recipe.objects.select_related('created_by').all()
+
+    if recipe_id:
+        recipes = recipes.filter(id=recipe_id)
 
     if fill_gaps and child:
         q = Q()
@@ -1506,6 +1876,29 @@ def parent_recipes(request):
     else:
         recipes = list(recipes.order_by('-id')[:limit])
 
+    if is_html:
+        recipe_list = [{
+            'id': r.id,
+            'name': r.name,
+            'description': r.description,
+            'ingredients': r.ingredients,
+            'steps': r.steps,
+            'calories': r.calories,
+            'protein': r.protein,
+            'carbohydrate': r.carbohydrate,
+            'fat': r.fat,
+            'target_nutrients': r.target_nutrients,
+            'target_nutrients_list': [t.strip() for t in (r.target_nutrients or '').split(',') if t.strip()],
+            'is_family_recipe': bool(r.created_by_id),
+            'created_by': r.created_by.username if r.created_by_id else None,
+            'gap_match_score': _gap_score(r) if child else 0,
+        } for r in recipes]
+        return render(request, 'parent/recipes.html', {
+            'child': child,
+            'recipes': recipe_list,
+            'children': _children,
+        })
+
     return JsonResponse({
         'success': True,
         'recipes': [{
@@ -1532,6 +1925,9 @@ def parent_recipe_create(request):
 
     if not is_parent(request.user):
         return JsonResponse({'success': False, 'message': '仅限家长账号添加食谱'}, status=403)
+
+    if request.method == 'GET':
+        return render(request, 'parent/recipe_add.html', {})
 
     name = (request.POST.get('name') or '').strip()
     ingredients = (request.POST.get('ingredients') or '').strip()
@@ -1660,6 +2056,23 @@ def parent_recipe_batch_import(request):
         'errors': errors[:10],
         'created': created[:20],
     })
+
+
+def parent_recipe_delete(request, recipe_id):
+    """删除食谱（仅创建者或管理员可删除）"""
+    if not is_parent(request.user):
+        return JsonResponse({'success': False, 'message': '仅限家长账号'}, status=403)
+
+    try:
+        recipe = Recipe.objects.get(id=recipe_id)
+    except Recipe.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '食谱不存在'}, status=404)
+
+    if recipe.created_by_id != request.user.id:
+        return JsonResponse({'success': False, 'message': '仅可删除自己创建的食谱'}, status=403)
+
+    recipe.delete()
+    return JsonResponse({'success': True, 'message': '食谱已删除'})
 
 
 @login_required
@@ -2587,6 +3000,8 @@ def _anonymous_health_ranking(teacher, days=7):
         score = task_n * 10 + meals_n * 5 + cats * 8
         ranked.append({
             'anon': _school_anon_label(child.id, teacher.id),
+            'child_name': child.name,
+            'child_nickname': child.nickname,
             'score': score,
             'tasks_ok': task_n,
             'meal_logs': meals_n,
@@ -2615,6 +3030,8 @@ def _desensitized_alerts(teacher):
             'level': 'high',
             'type': '过敏预警',
             'anon': label,
+            'child_name': child.name,
+            'child_nickname': child.nickname,
             'text': f"{alert.message or '检测到过敏原'}{'（' + tags + '）' if tags else ''}",
             'child_id': child.id,
         })
@@ -2627,6 +3044,8 @@ def _desensitized_alerts(teacher):
                 'level': 'high',
                 'type': '膳食打卡异常',
                 'anon': label,
+                'child_name': child.name,
+                'child_nickname': child.nickname,
                 'text': '近 3 日未见膳食记录，建议关注家庭端配合。',
             })
         week_tasks = TaskRecord.objects.filter(
@@ -2637,6 +3056,8 @@ def _desensitized_alerts(teacher):
                 'level': 'medium',
                 'type': '健康任务偏低',
                 'anon': label,
+                'child_name': child.name,
+                'child_nickname': child.nickname,
                 'text': '近一周任务完成次数偏少，可进行个体化沟通。',
             })
         wmeals = MealRecord.objects.filter(child=child, date__gte=week_ago, date__lte=today)
@@ -2647,6 +3068,8 @@ def _desensitized_alerts(teacher):
                     'level': 'medium',
                     'type': '热量估算偏低',
                     'anon': label,
+                    'child_name': child.name,
+                    'child_nickname': child.nickname,
                     'text': '周均膳食热量估算偏低，可结合营养师建议随访。',
                 })
     return alerts

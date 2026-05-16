@@ -134,16 +134,7 @@ pre.report { white-space: pre-wrap; font-size: 12px; background: #f5f5f5; paddin
 {% block content %}
 <div class="page-header" style="background: none; padding: 0; margin-bottom: 8px;">
     <div class="page-title">校园健康教育 · {{ teacher.class_name }}</div>
-    <div class="page-subtitle">{{ teacher.school.name }} · 近 7 日班级脱敏看板 · 家校共育管理中枢</div>
-</div>
-
-<div class="hint-box">
-    排行与预警均以匿名令牌展示学生身份，不外显姓名；营养素与膳食数据来源于家庭端打卡记录，仅作群体统计与教育工作参考。
-    班级名册中展示的<strong>参考摄入、过敏与医嘱标签</strong>由家长在家庭端维护，与儿童端只读展示<strong>同源</strong>，学校端仅查看、不提供修改入口。
-    打开本页时会自动把进行中的挑战进度同步到儿童端「挑战」模块；发布活动 / 首次推送微课会通过「鼓励语」推送到本班学生家长与孩子首页。
-    {% if school_peer_teachers %}
-    本校另有 {{ school_peer_teachers|length }} 个班级账号；校级挑战发起后，统计范围覆盖本校所有在读班级（以系统内绑定为准）。
-    {% endif %}
+    <div class="page-subtitle">{{ teacher.school.name }} · 近 7 日班级健康看板 · 家校共育管理中枢</div>
 </div>
 
 <div class="stats-grid">
@@ -191,16 +182,16 @@ pre.report { white-space: pre-wrap; font-size: 12px; background: #f5f5f5; paddin
 
 <div class="grid-2">
     <div class="card">
-        <div class="card-header"><div class="card-title">匿名健康活跃排行（近 7 日）</div></div>
+        <div class="card-header"><div class="card-title">健康活跃排行（近 7 日）</div></div>
         <div class="card-body" style="overflow:auto;">
             {% if anon_ranking %}
             <table class="table-rank">
-                <thead><tr><th>名次</th><th>匿名标识</th><th>综合分</th><th>任务</th><th>膳食条数</th><th>食材类数</th></tr></thead>
+                <thead><tr><th>名次</th><th>姓名</th><th>综合分</th><th>任务</th><th>膳食条数</th><th>食材类数</th></tr></thead>
                 <tbody>
                 {% for row in anon_ranking|slice:":15" %}
                     <tr>
                         <td><span class="rank-pill">#{{ row.rank }}</span></td>
-                        <td>{{ row.anon }}</td>
+                        <td>{{ row.child_name|default:row.child_nickname }}</td>
                         <td>{{ row.score }}</td>
                         <td>{{ row.tasks_ok }}</td>
                         <td>{{ row.meal_logs }}</td>
@@ -215,14 +206,14 @@ pre.report { white-space: pre-wrap; font-size: 12px; background: #f5f5f5; paddin
         </div>
     </div>
     <div class="card">
-        <div class="card-header"><div class="card-title">脱敏异常预警 · 干预线索</div></div>
+        <div class="card-header"><div class="card-title">异常预警 · 干预线索</div></div>
         <div class="card-body">
             {% if alerts %}
                 {% for a in alerts|slice:":12" %}
                 <div class="alert-row">
                     <span class="alert-level {{ a.level }}">{{ a.level|upper }}</span>
                     <div>
-                        <strong>{{ a.type }}</strong> · {{ a.anon }}<br>
+                        <strong>{{ a.type }}</strong> · {{ a.child_name|default:a.child_nickname }}<br>
                         <span style="color:#666">{{ a.text }}</span>
                     </div>
                 </div>
@@ -655,7 +646,7 @@ function _translateArchive(obj) {
         meal_checkin_rate: '膳食打卡率(%)',
         task_pass_rate: '任务达标率(%)',
         ranking_sample: '排行样本',
-        anon: '匿名标识',
+        anon: '姓名',
         score: '综合分',
         tasks_ok: '完成任务数',
         meal_logs: '膳食记录条数',

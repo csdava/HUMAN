@@ -1,0 +1,553 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}食谱 · 家庭端{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recipes-container {
+        width: 100%;
+        padding: 0;
+        background: #f0f2f5;
+        min-height: 100vh;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+        color: white;
+        padding: 20px 30px;
+        margin-bottom: 0;
+    }
+
+    .page-header h1 {
+        font-size: 22px;
+        margin-bottom: 5px;
+    }
+
+    .page-header p {
+        opacity: 0.8;
+        font-size: 14px;
+    }
+
+    .filter-bar {
+        background: white;
+        padding: 16px 20px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+    }
+
+    .filter-bar select, .filter-bar input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .filter-bar button {
+        padding: 8px 16px;
+        background: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .filter-bar button:hover {
+        background: #1976D2;
+    }
+
+    .gem-filters {
+        display: flex;
+        gap: 8px;
+    }
+
+    .gem-filter {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        transition: all 0.2s;
+    }
+
+    .gem-filter.active {
+        border-color: #2196F3;
+        transform: scale(1.1);
+    }
+
+    .gem-filter[data-gem="red"] { background: #ff6b6b; color: white; }
+    .gem-filter[data-gem="yellow"] { background: #ffd93d; color: #333; }
+    .gem-filter[data-gem="green"] { background: #6bcb77; color: white; }
+    .gem-filter[data-gem="blue"] { background: #4dabf7; color: white; }
+    .gem-filter[data-gem="purple"] { background: #b19fff; color: white; }
+
+    .recipes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        padding: 16px 20px;
+    }
+
+    .recipe-card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .recipe-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+
+    .recipe-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .recipe-name {
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+        flex: 1;
+    }
+
+    .recipe-badge {
+        font-size: 11px;
+        background: #fff3e0;
+        color: #e65100;
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-left: 8px;
+    }
+
+    .recipe-nutrients {
+        display: flex;
+        gap: 12px;
+        margin: 8px 0;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .recipe-nutrients span {
+        background: #f5f5f5;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .recipe-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .recipe-tag {
+        font-size: 11px;
+        background: #e8f5e9;
+        color: #2e7d32;
+        padding: 3px 8px;
+        border-radius: 10px;
+    }
+
+    .recipe-gems {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+    }
+
+    .recipe-gem {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .recipe-gem.red { background: #ff6b6b; color: white; }
+    .recipe-gem.yellow { background: #ffd93d; color: #333; }
+    .recipe-gem.green { background: #6bcb77; color: white; }
+    .recipe-gem.blue { background: #4dabf7; color: white; }
+    .recipe-gem.purple { background: #b19fff; color: white; }
+
+    .recipe-meta {
+        font-size: 12px;
+        color: #999;
+        margin-top: 8px;
+    }
+
+    .recipe-gaps {
+        display: flex;
+        gap: 4px;
+        margin-top: 6px;
+    }
+
+    .gap-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ddd;
+    }
+
+    .gap-dot.filled { background: #4CAF50; }
+
+    .add-recipe-btn {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        background: #2196F3;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .add-recipe-btn:hover {
+        background: #F57C00;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+    }
+
+    .child-gems-info {
+        background: white;
+        padding: 12px 20px;
+        border-bottom: 1px solid #eee;
+        font-size: 13px;
+        color: #666;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recipes-container">
+    <div class="page-header">
+        <h1>食谱推荐</h1>
+        <p>根据孩子五色缺口智能推荐营养食谱</p>
+    </div>
+
+    <div class="child-gems-info">
+        <span>当前孩子：{{ child.nickname }}</span>
+        <span>五色缺口：</span>
+        {% if not child.gem_red %}<span style="color:#ff6b6b;">谷物</span>{% endif %}
+        {% if not child.gem_yellow %}<span style="color:#ffd93d;">蛋白质</span>{% endif %}
+        {% if not child.gem_green %}<span style="color:#6bcb77;">蔬菜</span>{% endif %}
+        {% if not child.gem_blue %}<span style="color:#4dabf7;">水果</span>{% endif %}
+        {% if not child.gem_purple %}<span style="color:#b19fff;">乳制品</span>{% endif %}
+        {% if child.gem_red and child.gem_yellow and child.gem_green and child.gem_blue and child.gem_purple %}
+            <span style="color:#4CAF50;">已全部点亮</span>
+        {% endif %}
+    </div>
+
+    <div class="filter-bar">
+        <select id="targetFilter">
+            <option value="">全部营养</option>
+            <option value="谷物">谷物</option>
+            <option value="蛋白质">蛋白质</option>
+            <option value="蔬菜">蔬菜</option>
+            <option value="水果">水果</option>
+            <option value="乳制品">乳制品</option>
+            <option value="鱼">鱼</option>
+            <option value="蛋">蛋</option>
+        </select>
+        <select id="sortFilter">
+            <option value="gap">按缺口匹配排序</option>
+            <option value="calories">按热量排序</option>
+            <option value="protein">按蛋白质排序</option>
+        </select>
+        <button onclick="loadRecipes()">筛选</button>
+    </div>
+
+    <div class="recipes-grid" id="recipesGrid">
+        {% for r in recipes %}
+        <div class="recipe-card" ondblclick="showRecipeDetail({{ r.id }})" style="cursor:pointer;">
+            <div class="recipe-header">
+                <div class="recipe-name">{{ r.name }}</div>
+                {% if r.is_family_recipe %}
+                <div class="recipe-badge">家常菜</div>
+                {% endif %}
+            </div>
+            {% if r.description %}
+            <div style="font-size:13px;color:#666;margin-bottom:8px;">{{ r.description }}</div>
+            {% endif %}
+            <div class="recipe-nutrients">
+                <span>热量 {{ r.calories|floatformat:0 }} kcal</span>
+                <span>蛋白 {{ r.protein|floatformat:1 }} g</span>
+                <span>碳水 {{ r.carbohydrate|floatformat:1 }} g</span>
+                <span>脂肪 {{ r.fat|floatformat:1 }} g</span>
+            </div>
+            {% if r.target_nutrients %}
+            <div class="recipe-tags">
+                {% for tag in r.target_nutrients_list %}
+                <span class="recipe-tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="recipe-gems">
+                {% if '谷' in r.target_nutrients or '米' in r.target_nutrients or '面' in r.target_nutrients %}
+                <div class="recipe-gem red">谷</div>
+                {% endif %}
+                {% if '蛋白' in r.target_nutrients or '肉' in r.target_nutrients or '蛋' in r.target_nutrients or '鱼' in r.target_nutrients %}
+                <div class="recipe-gem yellow">蛋</div>
+                {% endif %}
+                {% if '蔬菜' in r.target_nutrients or '菜' in r.target_nutrients %}
+                <div class="recipe-gem green">菜</div>
+                {% endif %}
+                {% if '水果' in r.target_nutrients or '果' in r.target_nutrients %}
+                <div class="recipe-gem blue">果</div>
+                {% endif %}
+                {% if '奶' in r.target_nutrients or '乳' in r.target_nutrients %}
+                <div class="recipe-gem purple">奶</div>
+                {% endif %}
+            </div>
+            <div class="recipe-gaps" title="缺口匹配分">
+                {% for i in "xxxxx" %}
+                <div class="gap-dot {% if forloop.counter <= r.gap_match_score %}filled{% endif %}"></div>
+                {% endfor %}
+            </div>
+            {% if r.created_by %}
+            <div class="recipe-meta">创建者：{{ r.created_by }}</div>
+            {% endif %}
+            <button class="btn-delete-recipe" onclick="event.stopPropagation(); deleteRecipe({{ r.id }}, this)" style="margin-top:8px;padding:6px 12px;background:#f44336;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">删除</button>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-state-icon">🍽️</div>
+            <p>暂无食谱</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <a href="{% url 'parent_recipe_create' %}" class="add-recipe-btn">+</a>
+</div>
+
+<script>
+function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function loadRecipes() {
+    const target = document.getElementById('targetFilter').value;
+    const fillGaps = new URLSearchParams(window.location.search).get('fill_gaps') === '1';
+    const params = new URLSearchParams();
+    if (target) params.append('target', target);
+    if (fillGaps) params.append('fill_gaps', '1');
+    params.append('limit', 50);
+
+    fetch('/parent/recipes/?' + params.toString())
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.recipes.length > 0) {
+                renderRecipes(data.recipes);
+            }
+        });
+}
+
+function renderRecipes(recipes) {
+    const grid = document.getElementById('recipesGrid');
+    grid.innerHTML = recipes.map(r => `
+        <div class="recipe-card" ondblclick="showRecipeDetail(${r.id})" style="cursor:pointer;">
+            <div class="recipe-header">
+                <div class="recipe-name">${escapeHtml(r.name)}</div>
+                ${r.is_family_recipe ? '<div class="recipe-badge">家常菜</div>' : ''}
+            </div>
+            ${r.description ? `<div style="font-size:13px;color:#666;margin-bottom:8px;">${escapeHtml(r.description)}</div>` : ''}
+            <div class="recipe-nutrients">
+                <span>热量 ${r.calories} kcal</span>
+                <span>蛋白 ${r.protein} g</span>
+                <span>碳水 ${r.carbohydrate} g</span>
+                <span>脂肪 ${r.fat} g</span>
+            </div>
+            ${r.target_nutrients ? `
+            <div class="recipe-tags">
+                ${r.target_nutrients.split(',').map(t => `<span class="recipe-tag">${escapeHtml(t.trim())}</span>`).join('')}
+            </div>
+            ` : ''}
+            <div class="recipe-gaps" title="缺口匹配分">
+                ${[1,2,3,4,5].map(i => `<div class="gap-dot ${i <= r.gap_match_score ? 'filled' : ''}"></div>`).join('')}
+            </div>
+            ${r.created_by ? `<div class="recipe-meta">创建者：${escapeHtml(r.created_by)}</div>` : ''}
+            <button class="btn-delete-recipe" onclick="event.stopPropagation(); deleteRecipe(${r.id}, this)" style="margin-top:8px;padding:6px 12px;background:#f44336;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">删除</button>
+        </div>
+    `).join('');
+}
+
+function deleteRecipe(recipeId, btn) {
+    if (!confirm('确定要删除这个食谱吗？')) return;
+    btn.disabled = true;
+    btn.textContent = '删除中...';
+    const url = '/parent/recipes/delete/' + recipeId + '/';
+    console.log('Deleting:', url);
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(r => {
+        console.log('Response status:', r.status);
+        return r.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showToast('食谱已删除');
+            const card = btn.closest('.recipe-card');
+            if (card) card.remove();
+            checkEmptyState();
+        } else {
+            showToast(data.message || '删除失败');
+            btn.disabled = false;
+            btn.textContent = '删除';
+        }
+    })
+    .catch(err => {
+        showToast('网络错误');
+        btn.disabled = false;
+        btn.textContent = '删除';
+    });
+}
+
+function checkEmptyState() {
+    const grid = document.getElementById('recipesGrid');
+    if (grid && grid.children.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🍽️</div><p>暂无食谱</p></div>';
+    }
+}
+
+function showRecipeDetail(recipeId) {
+    console.log('showRecipeDetail called with id:', recipeId);
+    const url = '/parent/recipes/?id=' + recipeId + '&format=json';
+    console.log('Fetching:', url);
+    fetch(url)
+        .then(r => {
+            console.log('Response status:', r.status, 'Content-Type:', r.headers.get('Content-Type'));
+            const contentType = r.headers.get('Content-Type') || '';
+            if (contentType.includes('application/json')) {
+                return r.json();
+            } else {
+                console.log('Not JSON, returning dummy');
+                return {success: false, recipes: []};
+            }
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success && data.recipes && data.recipes.length > 0) {
+                const r = data.recipes[0];
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+                modal.innerHTML = `
+                    <div style="background:white;border-radius:16px;max-width:500px;width:100%;max-height:80vh;overflow:auto;padding:24px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h2 style="margin:0;font-size:20px;">${escapeHtml(r.name)}</h2>
+                            <button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+                        </div>
+                        ${r.description ? `<p style="color:#666;margin-bottom:16px;">${escapeHtml(r.description)}</p>` : ''}
+                        <div style="margin-bottom:16px;">
+                            <h4 style="margin-bottom:8px;">营养信息</h4>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <span style="background:#e3f2fd;padding:6px 12px;border-radius:8px;">热量 ${r.calories} kcal</span>
+                                <span style="background:#f3e5f5;padding:6px 12px;border-radius:8px;">蛋白质 ${r.protein}g</span>
+                                <span style="background:#e8f5e9;padding:6px 12px;border-radius:8px;">碳水 ${r.carbohydrate}g</span>
+                                <span style="background:#fff3e0;padding:6px 12px;border-radius:8px;">脂肪 ${r.fat}g</span>
+                            </div>
+                        </div>
+                        ${r.target_nutrients ? `
+                        <div style="margin-bottom:16px;">
+                            <h4 style="margin-bottom:8px;">营养标签</h4>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                ${r.target_nutrients.split(',').map(t => `<span style="background:#e8f5e9;color:#2e7d32;padding:4px 10px;border-radius:20px;font-size:13px;">${escapeHtml(t.trim())}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div style="margin-bottom:16px;">
+                            <h4 style="margin-bottom:8px;">食材清单</h4>
+                            <p style="color:#333;line-height:1.6;">${escapeHtml(r.ingredients) || '未提供'}</p>
+                        </div>
+                        ${r.steps ? `
+                        <div style="margin-bottom:16px;">
+                            <h4 style="margin-bottom:8px;">烹饪步骤</h4>
+                            <p style="color:#333;line-height:1.6;white-space:pre-wrap;">${escapeHtml(r.steps)}</p>
+                        </div>
+                        ` : ''}
+                        ${r.created_by ? `<div style="color:#999;font-size:13px;">创建者：${escapeHtml(r.created_by)}</div>` : ''}
+                    </div>
+                `;
+                modal.className = 'modal-overlay';
+                modal.onclick = function(e) {
+                    if (e.target === modal) modal.remove();
+                };
+                document.body.appendChild(modal);
+            } else {
+                console.log('No recipes found');
+                showToast('未找到食谱');
+            }
+        })
+        .catch(err => {
+            console.error('Fetch error:', err);
+            showToast('网络错误');
+        });
+}
+
+function showToast(message) {
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:12px 24px;border-radius:8px;z-index:3000;max-width:90%;text-align:center;';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

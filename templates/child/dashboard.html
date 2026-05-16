@@ -4,27 +4,65 @@
 {% block title %}童视智圈 - 儿童端{% endblock %}
 
 {% block header %}
-<header class="header" style="display: none;"></header>
+<header class="header">
+    <div class="header-left">
+        <div class="header-logo">
+            <span class="icon icon-leaf" style="font-size: 28px;"></span>
+            小勇士健康管理系统
+        </div>
+        <nav class="header-nav">
+            <a href="{% url 'child_dashboard' %}" class="active">首页</a>
+            <a href="{% url 'child_health' %}">手环</a>
+            <a href="{% url 'child_meals' %}">膳食</a>
+            <a href="{% url 'child_tasks' %}">任务</a>
+            <a href="{% url 'child_challenges' %}">挑战</a>
+            <a href="{% url 'child_badges_page' %}">徽章</a>
+            <a href="{% url 'child_encouragements' %}">鼓励</a>
+            <a href="{% url 'child_alerts' %}">预警</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="header-user">
+            <span class="icon icon-user"></span>
+            {{ child.nickname }}
+        </div>
+        <a href="{% url 'logout' %}" class="header-logout">退出</a>
+    </div>
+</header>
 {% endblock %}
 
 {% block extra_css %}
 <style>
     .child-container {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 20px;
+        width: 100%;
+        padding: 0;
+        padding-top: 60px;
+        background: #f0f2f5;
         min-height: 100vh;
+    }
+
+    .child-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .child-section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
     }
 
     .page-header {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         color: white;
-        padding: 30px;
-        border-radius: 16px;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 30px;
+        padding: 20px 30px;
+        margin-bottom: 0;
     }
 
     .child-info {
@@ -376,19 +414,31 @@
 
     .nav-jump {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
-        margin-bottom: 16px;
+        padding: 12px 16px;
+        background: white;
+        margin: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     .nav-jump a {
+        display: inline-block;
         font-size: 13px;
         color: #1976d2;
         text-decoration: none;
-        padding: 6px 12px;
-        background: #fff;
+        padding: 8px 14px;
+        background: #f5f5f5;
         border-radius: 20px;
         border: 1px solid #e0e0e0;
+        transition: all 0.2s;
+    }
+
+    .nav-jump a:hover {
+        background: #2196F3;
+        color: white;
+        border-color: #2196F3;
     }
 
     .task-grid {
@@ -1005,119 +1055,43 @@
     </div>
     {% else %}
     <div class="page-header">
-        <div class="child-info">
-            <div class="child-name">{{ child.nickname }}</div>
-            <div class="current-date">{{ today|date:"Y年m月d日" }}</div>
-            {% if child.bind_code %}
-            <div class="bind-code-panel">
-                <div class="bind-label">家长绑定码（6 位，请让家长在家庭端输入）</div>
-                <div class="bind-value" id="childBindCodeDisplay">{{ child.bind_code }}</div>
-                <div class="bind-hint">
-                    {% if child.parent_id %}
-                    已与家长账号关联；绑定码仍可让家长核对或告知其他监护人。
-                    {% else %}
-                    尚未绑定家长：请把上方编码告诉家长，在家庭端「家庭与班级」中完成绑定。
-                    {% endif %}
-                </div>
-                <button type="button" class="btn-copy-bind" onclick="copyChildBindCode()">复制绑定码</button>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 28px; font-weight: bold;">{{ child.nickname }}</div>
+                <div style="font-size: 14px; color: #aaa; margin-top: 5px;">{{ today|date:"Y年m月d日" }}</div>
             </div>
-            {% endif %}
-        </div>
-        <div class="level-badge">
-            Lv.{{ child.level }} 小勇士
+            <div class="level-badge">Lv.{{ child.level }} 小勇士</div>
         </div>
     </div>
 
-    <div class="nav-jump">
-        <a href="#sec-health">手环数据</a>
-        <a href="#sec-ai-meal">AI 膳食识别</a>
-        <a href="#sec-tasks">今日任务</a>
-        <a href="#sec-challenges">进行中的挑战</a>
-        <a href="#sec-badges">我的徽章</a>
-        <a href="#sec-encouragements">家长鼓励</a>
-        <a href="#sec-child-alerts">健康预警</a>
-    </div>
+    <!-- 小勇士信息 -->
+    <div class="child-section" id="sec-warrior">
+        <h3 class="child-section-title">小勇士信息</h3>
+        <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+            <div class="warrior-avatar" onclick="openAvatarModal()">
+                {% if child.avatar == 'default' %}
+                    <span class="icon icon-user"></span>
+                {% elif child.avatar == 'warrior' %}
+                    <span class="icon icon-star"></span>
+                {% elif child.avatar == 'princess' %}
+                    <span class="icon icon-heart"></span>
+                {% elif child.avatar == 'robot' %}
+                    <span class="icon icon-shield"></span>
+                {% elif child.avatar == 'unicorn' %}
+                    <span class="icon icon-star-empty"></span>
+                {% elif child.avatar == 'dragon' %}
+                    <span class="icon icon-flame"></span>
+                {% elif child.avatar == 'star' %}
+                    <span class="icon icon-crown"></span>
+                {% elif child.avatar == 'moon' %}
+                    <span class="icon icon-moon"></span>
+                {% else %}
+                    <span class="icon icon-user"></span>
+                {% endif %}
+                <span class="avatar-hover-plus">+</span>
+            </div>
 
-    {% if child.diet_notes %}
-    <div class="parent-notes-card">
-        <h3>家长备注（家庭端维护 · 只读）</h3>
-        <p>{{ child.diet_notes }}</p>
-    </div>
-    {% endif %}
-    {% if child.allergy_tags or child.medical_tags %}
-    <div class="parent-notes-card" style="background:#fce4ec;border-color:#f48fb1;">
-        <h3 style="color:#ad1457;">家长登记的饮食注意（只读）</h3>
-        {% if child.allergy_tags %}
-        <p style="margin:0 0 8px;"><strong>过敏相关：</strong>{% for t in child.allergy_tags %}<span style="display:inline-block;background:#fff;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;">{{ t }}</span>{% endfor %}</p>
-        {% endif %}
-        {% if child.medical_tags %}
-        <p style="margin:0;"><strong>医嘱 / 原则：</strong>{% for t in child.medical_tags %}<span style="display:inline-block;background:#fff;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;">{{ t }}</span>{% endfor %}</p>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    {% if family_health_readonly %}
-    <div class="intake-readonly-card">
-        <h3>每日参考摄入（与家庭端口径一致 · 只读）</h3>
-        {% if family_health_readonly.recommendation %}
-        <p>
-            热量约 <strong>{{ family_health_readonly.recommendation.calories_kcal_min }}–{{ family_health_readonly.recommendation.calories_kcal_max }}</strong> kcal/日，
-            蛋白质约 <strong>{{ family_health_readonly.recommendation.protein_g_min }}–{{ family_health_readonly.recommendation.protein_g_max }}</strong> g/日。
-            {{ family_health_readonly.recommendation.notes }}
-        </p>
-        {% if family_health_readonly.today_meal_totals.count %}
-        <p style="margin-top:10px;padding-top:10px;border-top:1px dashed #a5d6a7;">
-            <strong>今日摄入对比：</strong>热量约 {{ family_health_readonly.today_meal_totals.kcal|floatformat:0 }} / {{ family_health_readonly.recommendation.calories_kcal_min }}–{{ family_health_readonly.recommendation.calories_kcal_max }} kcal，
-            蛋白质约 {{ family_health_readonly.today_meal_totals.protein|floatformat:1 }} / {{ family_health_readonly.recommendation.protein_g_min }}–{{ family_health_readonly.recommendation.protein_g_max }} g
-        </p>
-        {% endif %}
-        {% else %}
-        <p style="color:#666;">请家长在家庭端填写<strong>出生日期</strong>后，系统才能按年龄给出参考区间（非医疗诊断）。</p>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <div class="child-alerts-section" id="sec-child-alerts">
-        <h3>健康预警</h3>
-        <p class="alerts-sub">与家庭端、学校端同源：拍照识别或家长修正餐食时若命中<strong>过敏标签</strong>会在此提示；已读状态仅同步给你本人界面。</p>
-        <div id="childAlertsList"><p style="color:#999;font-size:14px;">加载中…</p></div>
-    </div>
-
-    <div class="warrior-card">
-        <div class="warrior-avatar" onclick="openAvatarModal()"
-            {% if child.avatar == 'warrior' %}style="background: linear-gradient(135deg, #f44336, #ef5350);"
-            {% elif child.avatar == 'princess' %}style="background: linear-gradient(135deg, #e91e63, #f48fb1);"
-            {% elif child.avatar == 'robot' %}style="background: linear-gradient(135deg, #607d8b, #90a4ae);"
-            {% elif child.avatar == 'unicorn' %}style="background: linear-gradient(135deg, #9c27b0, #ba68c8);"
-            {% elif child.avatar == 'dragon' %}style="background: linear-gradient(135deg, #ff5722, #ff8a65);"
-            {% elif child.avatar == 'star' %}style="background: linear-gradient(135deg, #ffc107, #ffca28);"
-            {% elif child.avatar == 'moon' %}style="background: linear-gradient(135deg, #3f51b5, #7986cb);"
-            {% endif %}>
-            {% if child.avatar == 'default' %}
-                <span class="icon icon-user"></span>
-            {% elif child.avatar == 'warrior' %}
-                <span class="icon icon-star"></span>
-            {% elif child.avatar == 'princess' %}
-                <span class="icon icon-heart"></span>
-            {% elif child.avatar == 'robot' %}
-                <span class="icon icon-shield"></span>
-            {% elif child.avatar == 'unicorn' %}
-                <span class="icon icon-star-empty"></span>
-            {% elif child.avatar == 'dragon' %}
-                <span class="icon icon-flame"></span>
-            {% elif child.avatar == 'star' %}
-                <span class="icon icon-crown"></span>
-            {% elif child.avatar == 'moon' %}
-                <span class="icon icon-moon"></span>
-            {% else %}
-                <span class="icon icon-user"></span>
-            {% endif %}
-            <span class="avatar-hover-plus">+</span>
-        </div>
-
-        <div class="warrior-stats">
-            <div class="stats-title">小勇士信息</div>
-            <div class="stats-grid">
+            <div class="stats-grid" style="flex: 1; min-width: 200px;">
                 <div class="stat-box">
                     <div class="stat-value">{{ child.power }}</div>
                     <div class="stat-label">当前体力</div>
@@ -1131,220 +1105,60 @@
                     <div class="stat-label">勇士等级</div>
                 </div>
             </div>
-        </div>
 
-        <div class="power-section">
-            <div class="power-title">升级进度</div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: {{ progress_percent }}%"></div>
+            <div style="flex: 1;">
+                <div class="power-title">升级进度</div>
+                <div class="progress-bar" style="margin-top: 8px;">
+                    <div class="progress-fill" style="width: {{ progress_percent }}%"></div>
+                </div>
+                <div class="power-text">{{ child.power }} / {{ child.power_to_next }} 体力</div>
             </div>
-            <div class="power-text">{{ child.power }} / {{ child.power_to_next }} 体力</div>
-        </div>
 
-        <div class="five-color-section">
-            <div class="power-title">五色宝石</div>
-            <div class="gems-container">
-                <div class="gem gem-red {% if child.gem_red %}active{% endif %}">米</div>
-                <div class="gem gem-yellow {% if child.gem_yellow %}active{% endif %}">肉</div>
-                <div class="gem gem-green {% if child.gem_green %}active{% endif %}">菜</div>
-                <div class="gem gem-blue {% if child.gem_blue %}active{% endif %}">果</div>
-                <div class="gem gem-purple {% if child.gem_purple %}active{% endif %}">奶</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 健康数据区域 -->
-    <div class="health-section" id="sec-health" style="background: white; border-radius: 16px; padding: 30px; margin-bottom: 15px; max-width: 800px; margin-left: auto; margin-right: auto;">
-        <h2 class="section-title">手环健康数据</h2>
-        <div id="healthDataSection">
-            <div class="empty-state" style="padding: 20px;">
-                <p style="color: #999;">正在加载健康数据...</p>
-            </div>
-        </div>
-        <div style="text-align: center; margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
-            <button onclick="autoGenerateHealth()" style="background: linear-gradient(135deg, #4CAF50, #81C784); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
-                自动同步
-            </button>
-            <button onclick="openHealthModal()" style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
-                手动输入
-            </button>
-        </div>
-    </div>
-
-    <!-- 健康数据录入Modal -->
-    <div class="modal-overlay" id="healthModal">
-        <div class="modal-content" style="max-width: 450px;">
-            <div class="modal-header">
-                <div class="modal-title">📱 手动输入健康数据</div>
-                <button class="modal-close" onclick="closeHealthModal()">&times;</button>
-            </div>
-            <div style="max-height: 70vh; overflow-y: auto;">
-                <div style="padding: 10px 0;">
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🏃 步数</label>
-                        <input type="number" id="healthSteps" placeholder="今日步数" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🎯 步数目标</label>
-                        <input type="number" id="healthStepGoal" placeholder="目标步数" value="8000" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">⏱️ 活动分钟</label>
-                        <input type="number" id="healthActiveMinutes" placeholder="活动时长(分钟)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🔥 消耗卡路里</label>
-                        <input type="number" id="healthCalories" placeholder="消耗卡路里" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">❤️ 心率 - 平均</label>
-                        <input type="number" id="healthHeartRateAvg" placeholder="平均心率(bpm)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">心率最大</label>
-                            <input type="number" id="healthHeartRateMax" placeholder="最大" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">心率最小</label>
-                            <input type="number" id="healthHeartRateMin" placeholder="最小" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">😴 睡眠时长</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="healthSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                            <input type="number" id="healthSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">深睡时长</label>
-                            <div style="display: flex; gap: 5px;">
-                                <input type="number" id="healthDeepSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                                <input type="number" id="healthDeepSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                            </div>
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">浅睡时长</label>
-                            <div style="display: flex; gap: 5px;">
-                                <input type="number" id="healthLightSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                                <input type="number" id="healthLightSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                            </div>
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 14px; color: #666; margin-bottom: 5px;">🌙 REM睡眠时长</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="number" id="healthRemSleepHours" placeholder="时" min="0" max="24" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                            <input type="number" id="healthRemSleepMinutes" placeholder="分" min="0" max="59" style="width: 50%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
-                        </div>
-                    </div>
-                    <button onclick="submitHealthData()" style="width: 100%; background: linear-gradient(135deg, #4CAF50, #81C784); color: white; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
-                        保存健康数据
-                    </button>
+            <div>
+                <div class="power-title" style="text-align: center;">五色宝石</div>
+                <div class="gems-container" style="margin-top: 8px;">
+                    <div class="gem gem-red {% if child.gem_red %}active{% endif %}">米</div>
+                    <div class="gem gem-yellow {% if child.gem_yellow %}active{% endif %}">肉</div>
+                    <div class="gem gem-green {% if child.gem_green %}active{% endif %}">菜</div>
+                    <div class="gem gem-blue {% if child.gem_blue %}active{% endif %}">果</div>
+                    <div class="gem gem-purple {% if child.gem_purple %}active{% endif %}">奶</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="meal-section" id="sec-ai-meal">
-        <h2 class="section-title">AI 膳食识别</h2>
-        <div class="meal-upload" onclick="openMealModal()">
-            <div class="meal-upload-icon"><span class="icon icon-camera"></span></div>
-            <div class="meal-upload-text">点击拍照上传餐食</div>
-            <div class="meal-upload-hint">AI将自动识别食材种类并计算营养</div>
-        </div>
+    {% if child.diet_notes %}
+    <div class="child-section" id="sec-parent-notes">
+        <h3 class="child-section-title">家长备注</h3>
+        <p style="margin:0;font-size:14px;color:#5d4037;line-height:1.55;white-space:pre-wrap;">{{ child.diet_notes }}</p>
+    </div>
+    {% endif %}
 
-        <h3 style="font-size: 14px; color: #666; margin-bottom: 10px;">今日膳食记录</h3>
-        <div class="meal-records">
-            {% for meal in today_meals %}
-            <div class="meal-record {% if meal.allergy_hits %}meal-record-warning{% endif %}">
-                <div class="meal-type">{{ meal.get_meal_type_display }}</div>
-                <div class="meal-score">{{ meal.total_score }}<span>/5分</span></div>
-                {% if meal.allergy_hits %}
-                <div style="margin-top:6px;font-size:11px;color:#c62828;">
-                    {% for hit in meal.allergy_hits %}<span>⚠️ 过敏：{{ hit.food }}</span>{% endfor %}
-                </div>
+    {% if child.allergy_tags or child.medical_tags %}
+    <div class="child-section" id="sec-diet-notes">
+        <h3 class="child-section-title">饮食注意</h3>
+        {% if child.allergy_tags %}
+        <p style="margin:0 0 8px;font-size:14px;"><strong>过敏：</strong>{% for t in child.allergy_tags %}<span style="display:inline-block;background:#fff;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;">{{ t }}</span>{% endfor %}</p>
+        {% endif %}
+        {% if child.medical_tags %}
+        <p style="margin:0;font-size:14px;"><strong>医嘱：</strong>{% for t in child.medical_tags %}<span style="display:inline-block;background:#fff;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0;">{{ t }}</span>{% endfor %}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if child.bind_code %}
+    <div class="child-section" id="sec-bind-code" style="background:#e3f2fd;border:1px solid #90caf9;">
+        <h3 class="child-section-title">家长绑定码</h3>
+        <div style="text-align: center; padding: 10px 0;">
+            <div style="font-size: 36px; font-weight: bold; font-family: ui-monospace, Consolas, monospace; letter-spacing: 0.3em; color: #1976d2; margin-bottom: 10px;" id="childBindCodeDisplay">{{ child.bind_code }}</div>
+            <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                {% if child.parent_id %}
+                已与家长账号关联
+                {% else %}
+                尚未绑定家长，请把上方编码告诉家长
                 {% endif %}
             </div>
-            {% empty %}
-            <div class="empty-state" style="grid-column: 1/-1;">
-                <p>暂无膳食记录，点击上方拍照上传</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="tasks-section" id="sec-tasks">
-        <h2 class="section-title">今日任务</h2>
-        <div class="task-grid">
-            {% for item in daily_records %}
-            <div class="task-card {% if item.status == 'completed' %}completed{% endif %}">
-                <div class="task-icon"><span class="icon icon-bullet"></span></div>
-                <div class="task-details">
-                    <div class="task-name">{{ item.task.name }}</div>
-                    <div class="task-reward">+{{ item.task.power_reward }} 体力</div>
-                </div>
-                <div class="task-action">
-                    {% if item.status == 'pending' %}
-                        <button class="btn-apply" onclick="submitTask({{ item.task.id }})">申请完成</button>
-                    {% elif item.status == 'wait_confirm' %}
-                        <span class="btn-waiting">等待确认</span>
-                    {% elif item.status == 'completed' %}
-                        <span class="btn-completed"><span class="icon icon-check"></span> 已完成</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    {% if active_challenges %}
-    <div class="challenge-section" id="sec-challenges">
-        <h2 class="section-title">进行中的挑战</h2>
-        {% for progress in active_challenges %}
-        <div class="challenge-item">
-            <div class="challenge-icon"><span class="icon icon-trophy"></span></div>
-            <div class="challenge-info">
-                <div class="challenge-title">{{ progress.challenge.title }}</div>
-                <div class="challenge-progress">
-                    当前进度: {{ progress.current_value }} / {{ progress.challenge.target_value }}
-                </div>
-                <div class="challenge-bar">
-                    <div class="challenge-bar-fill" style="width: {{ progress.percent }}%"></div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if badges %}
-    <div class="badges-section" id="sec-badges">
-        <h2 class="section-title">我的徽章</h2>
-        <div class="badges-grid">
-            {% for badge in badges %}
-            <div class="badge-item earned" title="{{ badge.badge.name }}">
-                <span class="icon icon-medal"></span>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    {% if encouragements %}
-    <div class="encouragement-section" id="sec-encouragements">
-        <h2 class="section-title">家长鼓励</h2>
-        <div class="encouragement-list">
-            {% for enc in encouragements %}
-            <div class="encouragement-item" id="enc-{{ enc.id }}">
-                <div class="encouragement-icon"><span class="icon icon-hand"></span></div>
-                <div class="encouragement-text">{{ enc.message }}</div>
-                <div class="encouragement-time">{{ enc.created_at|date:"H:i" }}</div>
-                <button class="encouragement-close" onclick="closeEncouragement({{ enc.id }})">x</button>
-            </div>
-            {% endfor %}
+            <button type="button" class="btn-copy-bind" onclick="copyChildBindCode()">复制绑定码</button>
         </div>
     </div>
     {% endif %}
@@ -1541,6 +1355,11 @@
 </div>
 
 <script>
+function scrollToSection(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({behavior: 'smooth'});
+}
+
 let mediaStream = null;
 let currentImageFile = null;
 let selectedAvatar = '';

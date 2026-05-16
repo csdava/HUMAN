@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}童视智圈 - 添加食谱{% endblock %}
+
+{% block header %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-logo">
+            <span class="icon icon-leaf" style="font-size: 28px;"></span>
+            小勇士健康管理系统
+        </div>
+        <nav class="header-nav">
+            <a href="{% url 'parent_dashboard' %}">概览</a>
+            <a href="{% url 'parent_meals' %}">今日膳食</a>
+            <a href="{% url 'parent_trends' %}">健康趋势</a>
+            <a href="{% url 'parent_tasks' %}">健康任务</a>
+            <a href="{% url 'parent_recipes' %}">食谱</a>
+            <a href="{% url 'parent_health_data' %}">手环数据</a>
+            <a href="{% url 'parent_encourage' %}">鼓励语</a>
+            <a href="{% url 'parent_settings' %}">设置</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="header-user">
+            <span class="icon icon-user"></span>
+            {{ user.username }}
+        </div>
+        <a href="{% url 'logout' %}" class="header-logout">退出</a>
+    </div>
+</header>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .parent-container {
+        width: 100%;
+        padding: 0;
+        padding-top: 60px;
+        background: #f0f2f5;
+        min-height: 100vh;
+    }
+
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .form-section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    .btn-save:hover {
+        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+    }
+
+    .btn-cancel {
+        background: #f5f5f5;
+        color: #666;
+        padding: 12px 30px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-top: 10px;
+        margin-left: 10px;
+    }
+
+    .btn-cancel:hover {
+        background: #e0e0e0;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 20px 30px;
+        margin-bottom: 0;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 3000;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="parent-container">
+    <div class="page-header">
+        <div style="font-size: 24px; font-weight: bold;">
+            <span class="icon icon-plus"></span> 添加新食谱
+        </div>
+    </div>
+
+    <form method="POST" action="{% url 'parent_recipe_create' %}" id="recipeForm">
+        {% csrf_token %}
+        <div class="form-section">
+            <h3 class="form-section-title">基本信息</h3>
+            <div class="form-group">
+                <label for="name">食谱名称 *</label>
+                <input type="text" id="name" name="name" placeholder="例如：番茄炒蛋" required>
+            </div>
+            <div class="form-group">
+                <label for="description">简介</label>
+                <textarea id="description" name="description" placeholder="简要描述这道菜的特点"></textarea>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="form-section-title">食材清单 *</h3>
+            <div class="form-group">
+                <label for="ingredients">食材（每行一个）</label>
+                <textarea id="ingredients" name="ingredients" placeholder="例如：&#10;鸡蛋 2个&#10;番茄 1个&#10;食用油 适量" required></textarea>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="form-section-title">烹饪步骤</h3>
+            <div class="form-group">
+                <label for="steps">步骤（每行一步）</label>
+                <textarea id="steps" name="steps" placeholder="例如：&#10;1. 番茄切块&#10;2. 鸡蛋打散&#10;3. 热锅倒油"></textarea>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="form-section-title">营养目标（可选）</h3>
+            <div class="form-group">
+                <label for="target_nutrients">标签（逗号分隔）</label>
+                <input type="text" id="target_nutrients" name="target_nutrients" placeholder="例如：高蛋白, 低脂肪, 补铁">
+            </div>
+            <div class="form-group">
+                <label for="suitable_for">适宜人群</label>
+                <input type="text" id="suitable_for" name="suitable_for" placeholder="例如：儿童, 青少年">
+            </div>
+        </div>
+
+        <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
+            <button type="submit" class="btn-save">保存食谱</button>
+            <a href="{% url 'parent_recipes' %}"><button type="button" class="btn-cancel">取消</button></a>
+        </div>
+    </form>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 2500);
+}
+
+document.getElementById('recipeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast('食谱已添加');
+            setTimeout(() => {
+                window.location.href = "{% url 'parent_recipes' %}";
+            }, 1500);
+        } else {
+            showToast(data.message);
+        }
+    })
+    .catch(err => {
+        showToast('保存失败，请重试');
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

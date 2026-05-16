@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}童视智圈 - 挑战{% endblock %}
+
+{% block header %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-logo">
+            <span class="icon icon-leaf" style="font-size: 28px;"></span>
+            小勇士健康管理系统
+        </div>
+        <nav class="header-nav">
+            <a href="{% url 'child_dashboard' %}">首页</a>
+            <a href="{% url 'child_health' %}">手环</a>
+            <a href="{% url 'child_meals' %}">膳食</a>
+            <a href="{% url 'child_tasks' %}">任务</a>
+            <a href="{% url 'child_challenges' %}" class="active">挑战</a>
+            <a href="{% url 'child_badges_page' %}">徽章</a>
+            <a href="{% url 'child_encouragements' %}">鼓励</a>
+            <a href="{% url 'child_alerts' %}">预警</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="header-user">
+            <span class="icon icon-user"></span>
+            {{ child.nickname }}
+        </div>
+        <a href="{% url 'logout' %}" class="header-logout">退出</a>
+    </div>
+</header>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .child-container {
+        width: 100%;
+        padding: 0;
+        padding-top: 60px;
+        background: #f0f2f5;
+        min-height: 100vh;
+    }
+
+    .child-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .child-section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 20px 30px;
+        margin-bottom: 0;
+    }
+
+    .challenge-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+
+    .challenge-icon {
+        font-size: 32px;
+        color: #9C27B0;
+    }
+
+    .challenge-info {
+        flex: 1;
+    }
+
+    .challenge-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .challenge-progress {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .challenge-bar {
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+
+    .challenge-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4CAF50, #81C784);
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="child-container">
+    <div class="page-header">
+        <div style="font-size: 24px; font-weight: bold;">
+            <span class="icon icon-trophy"></span> 进行中的挑战
+        </div>
+    </div>
+
+    <div class="child-section">
+        <h3 class="child-section-title">挑战进度</h3>
+        {% for progress in active_challenges %}
+        <div class="challenge-item">
+            <div class="challenge-icon"><span class="icon icon-trophy"></span></div>
+            <div class="challenge-info">
+                <div class="challenge-title">{{ progress.challenge.title }}</div>
+                <div class="challenge-progress">
+                    当前进度: {{ progress.current_value }} / {{ progress.challenge.target_value }}
+                </div>
+                <div class="challenge-bar">
+                    <div class="challenge-bar-fill" style="width: {{ progress.percent }}%"></div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 40px; color: #999;">
+            <p>暂无进行中的挑战</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

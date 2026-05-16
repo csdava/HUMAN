@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}膳食记录 · 家庭端{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-container { width: 100%; padding: 0; background: #f0f2f5; min-height: 100vh; }
+    .page-header { background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 20px 30px; }
+    .page-header h1 { font-size: 22px; margin-bottom: 5px; }
+    .section { background: white; padding: 20px; margin: 16px; border-radius: 12px; }
+    .section-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+    .child-tab { padding: 10px 20px; background: #f0f0f0; border-radius: 20px; cursor: pointer; transition: all 0.3s; display: inline-block; margin: 4px; }
+    .child-tab:hover, .child-tab.active { background: #2196F3; color: white; }
+    .today-snapshot { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding: 14px; background: #e3f2fd; border-radius: 10px; font-size: 13px; color: #1565c0; }
+    .meal-report { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+    .report-card { background: #f9f9f9; padding: 20px; border-radius: 12px; text-align: center; }
+    .report-value { font-size: 28px; font-weight: bold; color: #2196F3; }
+    .report-label { font-size: 14px; color: #666; margin-top: 5px; }
+    .meal-food-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; justify-content: center; }
+    .food-tag { font-size: 11px; background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 10px; }
+    .badge-verified { display: inline-block; font-size: 11px; background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 8px; margin-top: 6px; }
+    .btn-add { background: #FF9800; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
+    .trend-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+    .hist-days-btn { padding: 8px 14px; border: 1px solid #ddd; background: #fff; border-radius: 8px; cursor: pointer; }
+    .hist-days-btn.active { background: #2196F3; color: #fff; border-color: #2196F3; }
+    .meal-history-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+    .meal-history-table th, .meal-history-table td { padding: 8px 6px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+    .meal-history-table th { color: #888; font-weight: 500; }
+    .empty-state { text-align: center; padding: 30px; color: #999; }
+    .empty-state-icon { font-size: 48px; margin-bottom: 10px; }
+    .btn-ghost { background: #fff; color: #1976d2; border: 1px solid #90caf9; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    .meal-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 2000; align-items: center; justify-content: center; padding: 16px; }
+    .meal-modal-overlay.open { display: flex; }
+    .meal-modal { background: #fff; border-radius: 16px; max-width: 520px; width: 100%; max-height: 90vh; overflow: auto; padding: 20px; }
+    .meal-modal-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .meal-modal-row select { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
+    .meal-modal-row input[type="number"] { width: 80px; padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
+    .btn-danger-ghost { background: transparent; color: #c62828; border: none; cursor: pointer; font-size: 12px; }
+    .nav-jump { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 0 16px; }
+    .nav-jump a { font-size: 13px; color: #1976d2; text-decoration: none; padding: 6px 12px; background: #fff; border-radius: 20px; border: 1px solid #e0e0e0; }
+    .nav-jump a:hover { background: #e3f2fd; }
+    @media (max-width: 768px) { .meal-report { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1>膳食记录</h1>
+    </div>
+
+    {% if children|length > 1 %}
+    <div class="section" style="margin: 16px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            {% for c in children %}
+            <div class="child-tab {% if c.id == child.id %}active{% endif %}" onclick="switchChild({{ c.id }})">
+                {% if c.gender == 'M' %}<span class="icon icon-male"></span>{% else %}<span class="icon icon-female"></span>{% endif %} {{ c.nickname }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section" id="sec-meals">
+        <h2 class="section-title">今日膳食</h2>
+        {% if today_meal_totals.count %}
+        <div class="today-snapshot">
+            <span><strong>今日累计</strong></span>
+            <span>餐次 {{ today_meal_totals.count }}</span>
+            <span>热量约 {{ today_meal_totals.kcal|floatformat:0 }} kcal</span>
+            <span>蛋白质约 {{ today_meal_totals.protein|floatformat:1 }} g</span>
+            <span>碳水约 {{ today_meal_totals.carb|floatformat:1 }} g</span>
+            <span>脂肪约 {{ today_meal_totals.fat|floatformat:1 }} g</span>
+        </div>
+        {% endif %}
+        {% if today_meals %}
+        <div class="meal-report">
+            {% for meal in today_meals %}
+            <div class="report-card meal-card-wrap" id="meal-card-{{ meal.id }}" data-meal-id="{{ meal.id }}">
+                <div style="font-size: 14px; color: #666;">{{ meal.get_meal_type_display }}</div>
+                {% if meal.image_key %}
+                <div style="margin-top: 8px;"><img src="{{ meal.image_key }}" alt="餐图" style="max-width: 100%; max-height: 100px; border-radius: 8px; object-fit: cover;" onerror="this.style.display='none'"></div>
+                {% endif %}
+                <div class="meal-food-tags">
+                    {% for fi in meal.food_items.all %}
+                    <span class="food-tag">{{ fi.food.name }} {{ fi.weight|floatformat:0 }}g</span>
+                    {% empty %}
+                    <span style="font-size: 12px; color: #999;">暂无食材明细</span>
+                    {% endfor %}
+                </div>
+                <div style="font-size: 22px; font-weight: bold; color: #4CAF50; margin-top: 8px;">
+                    <span class="meal-score-val">{{ meal.total_score }}</span>/5
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                    <span class="meal-kcal-val">{{ meal.total_calories|floatformat:0 }}</span> kcal
+                </div>
+                {% if meal.is_verified %}<span class="badge-verified">已人工核对</span>{% endif %}
+                <button type="button" class="btn-add" style="margin-top: 10px; font-size: 12px; padding: 6px 12px;" onclick="correctMeal({{ meal.id }})">修正本餐</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><span class="icon icon-food"></span></div>
+            <p>今日暂无膳食记录</p>
+            <p style="font-size: 12px; margin-top: 10px;">由儿童端拍照上传后，将出现在此处</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="section" id="sec-history">
+        <h2 class="section-title">历史膳食</h2>
+        <div class="trend-toolbar">
+            <button type="button" class="hist-days-btn active" data-hdays="14" onclick="loadParentMealHistory(14)">近14天</button>
+            <button type="button" class="hist-days-btn" data-hdays="30" onclick="loadParentMealHistory(30)">近30天</button>
+            <button type="button" class="hist-days-btn" data-hdays="7" onclick="loadParentMealHistory(7)">近7天</button>
+        </div>
+        <div id="mealHistoryHost" style="font-size: 13px; color: #555;">加载中…</div>
+    </div>
+</div>
+
+<form method="POST" action="{% url 'parent_switch_child' %}" id="switchChildForm">
+    {% csrf_token %}
+    <input type="hidden" name="child_id" value="{{ child.id }}" id="selectedChildId">
+</form>
+
+<div id="mealModal" class="meal-modal-overlay" aria-hidden="true">
+    <div class="meal-modal">
+        <h3 style="margin-top: 0;">修正本餐食材</h3>
+        <p id="mealModalSubtitle" style="font-size: 13px; color: #666;"></p>
+        <div id="mealModalRows"></div>
+        <button type="button" class="btn-ghost" onclick="addMealModalRow()">+ 添加一行</button>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
+            <button type="button" class="btn-ghost" onclick="closeMealModal()">取消</button>
+            <button type="button" class="btn-add" onclick="saveMealCorrect()">保存</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; display: none; z-index: 3000; max-width: 90%; text-align: center;"></div>
+
+<script>
+let cachedFoodOptionsHtml = '';
+let currentCorrectMealId = null;
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+
+function switchChild(childId) {
+    document.getElementById('selectedChildId').value = childId;
+    document.getElementById('switchChildForm').submit();
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function loadParentMealHistory(days) {
+    document.querySelectorAll('.hist-days-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.hdays, 10) === days);
+    });
+    const host = document.getElementById('mealHistoryHost');
+    host.textContent = '加载中…';
+    fetch('/parent/meal-list/?days=' + days)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success || !data.dates || data.dates.length === 0) {
+                host.innerHTML = '<p style="color:#999">该时段暂无膳食记录</p>';
+                return;
+            }
+            let html = '';
+            data.dates.forEach(block => {
+                html += '<div style="margin-bottom:16px"><strong>' + block.date + '</strong><table class="meal-history-table"><thead><tr><th>餐次</th><th>评分</th><th>热量</th><th>食材摘要</th><th></th></tr></thead><tbody>';
+                block.meals.forEach(m => {
+                    html += '<tr><td>' + m.meal_type_display + '</td><td>' + m.total_score + '/5</td><td>' + m.total_calories + ' kcal</td><td>' + (m.food_summary || '') + '</td><td><button type="button" class="btn-add" style="padding:4px 10px;font-size:12px" onclick="correctMeal(' + m.id + ')">修正</button></td></tr>';
+                });
+                html += '</tbody></table></div>';
+            });
+            host.innerHTML = html;
+        })
+        .catch(() => { host.textContent = '加载失败'; });
+}
+
+function ensureFoodOptions(cb) {
+    if (cachedFoodOptionsHtml) { cb(); return; }
+    fetch('/parent/food-materials/')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success || !data.foods) { showToast('加载食材失败'); return; }
+            cachedFoodOptionsHtml = data.foods.map(f => '<option value="' + f.id + '">' + f.name + ' (' + f.category + ')</option>').join('');
+            cb();
+        })
+        .catch(() => showToast('加载食材失败'));
+}
+
+function correctMeal(mealId) {
+    currentCorrectMealId = mealId;
+    ensureFoodOptions(() => {
+        fetch('/parent/meal/' + mealId + '/detail/')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || !data.meal) { showToast(data.message || '加载失败'); return; }
+                const m = data.meal;
+                document.getElementById('mealModalSubtitle').textContent = m.meal_type_display + ' · ' + m.date + ' · 共 ' + m.foods.length + ' 条食材';
+                const box = document.getElementById('mealModalRows');
+                box.innerHTML = '';
+                if (m.foods.length === 0) { addMealModalRow(); }
+                else { m.foods.forEach(f => addMealModalRow(f.food_id, f.weight)); }
+                document.getElementById('mealModal').classList.add('open');
+                document.getElementById('mealModal').setAttribute('aria-hidden', 'false');
+            });
+    });
+}
+
+function addMealModalRow(foodId, weight) {
+    const box = document.getElementById('mealModalRows');
+    const row = document.createElement('div');
+    row.className = 'meal-modal-row';
+    row.innerHTML = '<select class="meal-food-select">' + cachedFoodOptionsHtml + '</select><input type="number" class="meal-weight-input" min="0" step="1" value="' + (weight != null ? weight : 100) + '" placeholder="克"><button type="button" class="btn-danger-ghost" onclick="this.parentElement.remove()">删除</button>';
+    box.appendChild(row);
+    if (foodId) row.querySelector('.meal-food-select').value = String(foodId);
+}
+
+function closeMealModal() {
+    document.getElementById('mealModal').classList.remove('open');
+    document.getElementById('mealModal').setAttribute('aria-hidden', 'true');
+    currentCorrectMealId = null;
+}
+
+function saveMealCorrect() {
+    if (!currentCorrectMealId) return;
+    const rows = document.querySelectorAll('#mealModalRows .meal-modal-row');
+    const params = new URLSearchParams();
+    rows.forEach(row => {
+        const fid = row.querySelector('.meal-food-select').value;
+        const w = row.querySelector('.meal-weight-input').value;
+        if (fid) { params.append('food_ids', fid); params.append('weights', w || '0'); }
+    });
+    fetch('/parent/correct-meal/' + currentCorrectMealId + '/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message);
+            closeMealModal();
+            location.reload();
+        } else { showToast(data.message || '保存失败'); }
+    });
+}
+
+document.getElementById('mealModal').addEventListener('click', function(ev) { if (ev.target === this) closeMealModal(); });
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadParentMealHistory(14);
+});
+</script>
+{% endblock %}

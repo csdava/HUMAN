@@ -1,0 +1,744 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}童视智圈 - 膳食{% endblock %}
+
+{% block header %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-logo">
+            <span class="icon icon-leaf" style="font-size: 28px;"></span>
+            小勇士健康管理系统
+        </div>
+        <nav class="header-nav">
+            <a href="{% url 'child_dashboard' %}">首页</a>
+            <a href="{% url 'child_health' %}">手环</a>
+            <a href="{% url 'child_meals' %}" class="active">膳食</a>
+            <a href="{% url 'child_tasks' %}">任务</a>
+            <a href="{% url 'child_challenges' %}">挑战</a>
+            <a href="{% url 'child_badges_page' %}">徽章</a>
+            <a href="{% url 'child_encouragements' %}">鼓励</a>
+            <a href="{% url 'child_alerts' %}">预警</a>
+        </nav>
+    </div>
+    <div class="header-right">
+        <div class="header-user">
+            <span class="icon icon-user"></span>
+            {{ child.nickname }}
+        </div>
+        <a href="{% url 'logout' %}" class="header-logout">退出</a>
+    </div>
+</header>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .child-container {
+        width: 100%;
+        padding: 0;
+        padding-top: 60px;
+        background: #f0f2f5;
+        min-height: 100vh;
+    }
+
+    .child-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .child-section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 20px 30px;
+        margin-bottom: 0;
+    }
+
+    .meal-upload {
+        border: 2px dashed #4CAF50;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .meal-upload:hover {
+        background: #f0f9f0;
+    }
+
+    .meal-upload-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+        color: #666;
+    }
+
+    .meal-upload-text {
+        font-size: 16px;
+        color: #333;
+    }
+
+    .meal-upload-hint {
+        font-size: 12px;
+        color: #999;
+        margin-top: 5px;
+    }
+
+    .meal-records {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+
+    .meal-record {
+        background: #f9f9f9;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .meal-record-warning {
+        background: #fff3e0;
+        border: 2px solid #ff9800;
+    }
+
+    .meal-type {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .meal-score {
+        font-size: 24px;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+
+    .meal-score span {
+        font-size: 14px;
+        color: #999;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #999;
+    }
+
+    .upload-options {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .upload-option {
+        flex: 1;
+        padding: 30px;
+        border: 2px dashed #ccc;
+        border-radius: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .upload-option:hover {
+        border-color: #4CAF50;
+        background: #f0f9f0;
+    }
+
+    .upload-option-icon {
+        font-size: 36px;
+        margin-bottom: 10px;
+    }
+
+    .upload-option-text {
+        font-size: 14px;
+        color: #333;
+    }
+
+    #cameraPreview {
+        display: none;
+        width: 100%;
+        max-width: 400px;
+        border-radius: 8px;
+        margin: 0 auto 15px;
+    }
+
+    #capturedPhoto {
+        display: none;
+        width: 100%;
+        max-width: 400px;
+        border-radius: 8px;
+        margin: 0 auto 15px;
+    }
+
+    .camera-controls {
+        display: none;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .btn-capture {
+        background: #4CAF50;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .btn-recapture {
+        background: #666;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .btn-analyze {
+        background: linear-gradient(135deg, #4CAF50, #81C784);
+        color: white;
+        padding: 15px 40px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        display: none;
+        margin: 0 auto;
+    }
+
+    .btn-analyze:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+    }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #4CAF50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .result-section {
+        display: none;
+    }
+
+    .result-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .food-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .food-tag {
+        background: #e8f5e9;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        color: #2e7d32;
+    }
+
+    .nutrition-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .nutrition-item {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .nutrition-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+
+    .nutrition-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .score-display {
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+
+    .score-value {
+        font-size: 48px;
+        font-weight: bold;
+        color: #2e7d32;
+    }
+
+    .score-label {
+        font-size: 16px;
+        color: #666;
+    }
+
+    .gems-display {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .gems-display .gem {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        opacity: 0.3;
+        color: white;
+    }
+
+    .gems-display .gem.active {
+        opacity: 1;
+    }
+
+    .gem { opacity: 0.3; }
+    .gem.active { opacity: 1; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+    .gem-red { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); }
+    .gem-yellow { background: linear-gradient(135deg, #ffd93d, #ffb347); }
+    .gem-green { background: linear-gradient(135deg, #6bcb77, #4CAF50); }
+    .gem-blue { background: linear-gradient(135deg, #4dabf7, #2196F3); }
+    .gem-purple { background: linear-gradient(135deg, #b19fff, #9C27B0); }
+
+    .bonus-message {
+        text-align: center;
+        padding: 15px;
+        background: #fff3e0;
+        border-radius: 8px;
+        color: #e65100;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="child-container">
+    <div class="page-header">
+        <div style="font-size: 24px; font-weight: bold;">
+            <span class="icon icon-fork"></span> AI 膳食识别
+        </div>
+    </div>
+
+    <div class="child-section">
+        <h3 class="child-section-title">上传餐食</h3>
+        <div class="meal-upload" onclick="openMealModal()">
+            <div class="meal-upload-icon"><span class="icon icon-camera"></span></div>
+            <div class="meal-upload-text">点击拍照上传餐食</div>
+            <div class="meal-upload-hint">AI将自动识别食材种类并计算营养</div>
+        </div>
+    </div>
+
+    <div class="child-section">
+        <h3 class="child-section-title">今日膳食记录</h3>
+        <div class="meal-records">
+            {% for meal in today_meals %}
+            <div class="meal-record {% if meal.allergy_hits %}meal-record-warning{% endif %}">
+                <div class="meal-type">{{ meal.get_meal_type_display }}</div>
+                <div class="meal-score">{{ meal.total_score }}<span>/5分</span></div>
+                {% if meal.allergy_hits %}
+                <div style="margin-top:6px;font-size:11px;color:#c62828;">
+                    {% for hit in meal.allergy_hits %}<span>⚠️ 过敏：{{ hit.food }}</span>{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">
+                <p>暂无膳食记录，点击上方拍照上传</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Meal Upload Modal -->
+<div class="modal-overlay" id="mealModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">AI 膳食识别</div>
+            <button class="modal-close" onclick="closeMealModal()">&times;</button>
+        </div>
+
+        <div class="upload-options" id="uploadOptions">
+            <div class="upload-option" onclick="selectPhotoUpload()">
+                <div class="upload-option-icon"><span class="icon icon-image"></span></div>
+                <div class="upload-option-text">从相册选择</div>
+            </div>
+            <div class="upload-option" onclick="startCamera()">
+                <div class="upload-option-icon"><span class="icon icon-camera"></span></div>
+                <div class="upload-option-text">拍照上传</div>
+            </div>
+        </div>
+
+        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(this.files[0])">
+
+        <video id="cameraPreview" autoplay playsinline></video>
+        <canvas id="cameraCanvas" style="display: none;"></canvas>
+        <img id="capturedPhoto" alt="Captured photo">
+
+        <div class="camera-controls" id="cameraControls">
+            <button class="btn-capture" onclick="capturePhoto()">拍照</button>
+        </div>
+
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <div>AI 正在识别食材...</div>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="btn-analyze" id="btnAnalyze" onclick="analyzeMeal()">
+                开始分析
+            </button>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-title">识别结果</div>
+
+            <div class="food-list" id="foodList"></div>
+
+            <div class="score-display">
+                <div class="score-value" id="scoreValue">0/5</div>
+                <div class="score-label">五色营养评分</div>
+            </div>
+
+            <div class="gems-display" id="gemsDisplay"></div>
+
+            <div class="bonus-message" id="bonusMessage" style="display: none;"></div>
+
+            <div class="nutrition-grid">
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="caloriesValue">0</div>
+                    <div class="nutrition-label">热量 (kcal)</div>
+                </div>
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="proteinValue">0</div>
+                    <div class="nutrition-label">蛋白质 (g)</div>
+                </div>
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="carbValue">0</div>
+                    <div class="nutrition-label">碳水化合物 (g)</div>
+                </div>
+                <div class="nutrition-item">
+                    <div class="nutrition-value" id="fatValue">0</div>
+                    <div class="nutrition-label">脂肪 (g)</div>
+                </div>
+            </div>
+
+            <button class="btn-analyze" onclick="closeMealModal(); location.reload();" style="display: block; margin: 0 auto;">
+                完成
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" style="display: none;"></div>
+
+<script>
+let mediaStream = null;
+let currentImageFile = null;
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 2000);
+}
+
+function openMealModal() {
+    document.getElementById('mealModal').classList.add('active');
+    resetMealModal();
+}
+
+function closeMealModal() {
+    stopCamera();
+    document.getElementById('mealModal').classList.remove('active');
+}
+
+function resetMealModal() {
+    document.getElementById('uploadOptions').style.display = 'flex';
+    document.getElementById('cameraPreview').style.display = 'none';
+    document.getElementById('capturedPhoto').style.display = 'none';
+    document.getElementById('cameraControls').style.display = 'none';
+    document.getElementById('loadingSpinner').style.display = 'none';
+    document.getElementById('btnAnalyze').style.display = 'none';
+    document.getElementById('resultSection').style.display = 'none';
+    currentImageFile = null;
+}
+
+function selectPhotoUpload() {
+    document.getElementById('photoInput').click();
+}
+
+function handlePhotoSelect(file) {
+    if (!file) return;
+    currentImageFile = file;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById('capturedPhoto');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        document.getElementById('uploadOptions').style.display = 'none';
+        document.getElementById('cameraControls').style.display = 'none';
+        document.getElementById('btnAnalyze').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function startCamera() {
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+        });
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = mediaStream;
+        video.style.display = 'block';
+        document.getElementById('uploadOptions').style.display = 'none';
+        document.getElementById('cameraControls').style.display = 'block';
+        document.getElementById('capturedPhoto').style.display = 'none';
+    } catch (err) {
+        showToast('无法访问摄像头，请检查权限设置');
+        console.error(err);
+    }
+}
+
+function stopCamera() {
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+    }
+}
+
+function capturePhoto() {
+    const video = document.getElementById('cameraPreview');
+    const canvas = document.getElementById('cameraCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+        currentImageFile = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+        const img = document.getElementById('capturedPhoto');
+        img.src = URL.createObjectURL(blob);
+        img.style.display = 'block';
+
+        stopCamera();
+        video.style.display = 'none';
+        document.getElementById('cameraControls').style.display = 'none';
+        document.getElementById('btnAnalyze').style.display = 'block';
+    }, 'image/jpeg', 0.9);
+}
+
+function analyzeMeal() {
+    if (!currentImageFile) {
+        showToast('请先上传图片');
+        return;
+    }
+
+    document.getElementById('btnAnalyze').style.display = 'none';
+    document.getElementById('loadingSpinner').style.display = 'block';
+
+    const formData = new FormData();
+    formData.append('meal_type', 'lunch');
+    formData.append('image', currentImageFile);
+
+    fetch('/api/yolo/recognize/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loadingSpinner').style.display = 'none';
+
+        if (data.success) {
+            displayResults(data);
+        } else {
+            showToast(data.message || '识别失败，请重试');
+            resetMealModal();
+        }
+    })
+    .catch(err => {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        showToast('上传失败，请重试');
+        resetMealModal();
+    });
+}
+
+function displayResults(data) {
+    document.getElementById('resultSection').style.display = 'block';
+
+    const foodList = document.getElementById('foodList');
+    foodList.innerHTML = '';
+    data.foods.forEach(food => {
+        const tag = document.createElement('div');
+        tag.className = 'food-tag';
+        tag.textContent = food.name;
+        foodList.appendChild(tag);
+    });
+
+    document.getElementById('scoreValue').textContent = data.score + '/5';
+
+    const gemsDisplay = document.getElementById('gemsDisplay');
+    gemsDisplay.innerHTML = '';
+    const gemColors = ['red', 'yellow', 'green', 'blue', 'purple'];
+    const gemLabels = ['米', '肉', '菜', '果', '奶'];
+    gemColors.forEach((color, i) => {
+        const gem = document.createElement('div');
+        gem.className = `gem gem-${color} ${data.gems[color] ? 'active' : ''}`;
+        gem.textContent = gemLabels[i];
+        gemsDisplay.appendChild(gem);
+    });
+
+    if (data.five_color_bonus > 0) {
+        document.getElementById('bonusMessage').style.display = 'block';
+        document.getElementById('bonusMessage').textContent = '🎉 五色满分！获得额外 ' + data.five_color_bonus + ' 体力奖励！';
+    } else {
+        document.getElementById('bonusMessage').style.display = 'none';
+    }
+
+    if (data.nutrition) {
+        document.getElementById('caloriesValue').textContent = data.nutrition.calories;
+        document.getElementById('proteinValue').textContent = data.nutrition.protein;
+        document.getElementById('carbValue').textContent = data.nutrition.carbohydrate;
+        document.getElementById('fatValue').textContent = data.nutrition.fat;
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

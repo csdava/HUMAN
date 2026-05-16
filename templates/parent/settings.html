@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}设置 · 家庭端{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-container { width: 100%; padding: 0; background: #f0f2f5; min-height: 100vh; }
+    .page-header { background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 20px 30px; }
+    .page-header h1 { font-size: 22px; margin-bottom: 5px; }
+    .section { background: white; padding: 20px; margin: 16px; border-radius: 12px; }
+    .section-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+    .child-tab { padding: 10px 20px; background: #f0f0f0; border-radius: 20px; cursor: pointer; transition: all 0.3s; display: inline-block; margin: 4px; }
+    .child-tab:hover, .child-tab.active { background: #2196F3; color: white; }
+    .btn-add { background: #FF9800; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-ghost { background: #fff; color: #1976d2; border: 1px solid #90caf9; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    .diet-notes-box textarea { width: 100%; min-height: 72px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <h1>设置</h1>
+    </div>
+
+    {% if children|length > 1 %}
+    <div class="section" style="margin: 16px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            {% for c in children %}
+            <div class="child-tab {% if c.id == child.id %}active{% endif %}" onclick="switchChild({{ c.id }})">
+                {% if c.gender == 'M' %}<span class="icon icon-male"></span>{% else %}<span class="icon icon-female"></span>{% endif %} {{ c.nickname }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h2 class="section-title">家庭与班级（绑定码、进班）</h2>
+
+        <h3 style="font-size: 16px; margin-bottom: 10px;">绑定儿童</h3>
+        <p style="color: #666; font-size: 14px; margin-bottom: 15px;">绑定码由儿童端同事生成的账号页面展示；此处仅消费绑定码。</p>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="bindCodeInput" placeholder="请输入6位绑定码" maxlength="6" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-transform: uppercase;">
+            <button type="button" class="btn-add" onclick="bindChild()">绑定</button>
+        </div>
+        <div id="bindStatus" style="margin-top: 15px; font-size: 13px; color: #666;"></div>
+    </div>
+
+    <div class="section">
+        <h3 style="font-size: 16px; margin-bottom: 10px;">进班 / 更换班级</h3>
+        <p style="color: #666; font-size: 14px; margin-bottom: 12px;">教师与班级由学校端维护。</p>
+        <div id="classEnrollmentSummary" style="font-size: 14px; color: #333; margin-bottom: 14px; padding: 12px; background: #f5f5f5; border-radius: 8px;"></div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="childSelect" style="flex: 1; min-width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <option value="">选择孩子</option>
+                {% for c in children %}
+                <option value="{{ c.id }}" {% if c.id == child.id %}selected{% endif %}>{{ c.nickname }}</option>
+                {% endfor %}
+            </select>
+            <select id="teacherSelect" style="flex: 2; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <option value="">选择教师/班级</option>
+            </select>
+            <button type="button" class="btn-add" onclick="setChildClass()">保存班级（换班）</button>
+        </div>
+        <div style="margin-top: 12px;">
+            <button type="button" class="btn-ghost" onclick="leaveAllClasses()" style="color:#c62828;">退出全部班级</button>
+        </div>
+        <div id="classStatus" style="margin-top: 15px; font-size: 13px; color: #666;"></div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">孩子信息</h2>
+        <div class="diet-notes-box" style="margin-bottom: 16px;">
+            <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">出生日期（仅家庭端）</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                <input type="date" id="birthDateInput" value="{% if child.birth_date %}{{ child.birth_date|date:'Y-m-d' }}{% endif %}" max="" style="padding:8px;border:1px solid #ddd;border-radius:8px;">
+                <button type="button" class="btn-add" onclick="saveBirthDate()">保存</button>
+                <button type="button" class="btn-ghost" onclick="clearBirthDate()">清空</button>
+            </div>
+            <span id="birthDateStatus" style="display:block;margin-top:8px;font-size:13px;color:#666;"></span>
+        </div>
+        <div class="diet-notes-box" style="margin-bottom: 16px;">
+            <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">饮食备注</div>
+            <textarea id="dietNotesInput" maxlength="4000" placeholder="例如：对花生过敏；晚餐尽量少油…">{{ child.diet_notes }}</textarea>
+            <button type="button" class="btn-add" style="margin-top: 8px;" onclick="saveDietNotes()">保存备注</button>
+            <span id="dietNotesStatus" style="margin-left: 10px; font-size: 13px; color: #666;"></span>
+        </div>
+        <div class="diet-notes-box">
+            <div style="font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">过敏与医嘱标签</div>
+            <label style="font-size:12px;color:#666;">过敏</label>
+            <input type="text" id="allergyTagsInput" maxlength="500" placeholder="如：花生,鸡蛋" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0 12px;font-size:14px;"
+                value="{% for t in child.allergy_tags %}{{ t }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+            <label style="font-size:12px;color:#666;">医嘱 / 饮食原则</label>
+            <input type="text" id="medicalTagsInput" maxlength="500" placeholder="如：少油,控糖" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0 8px;font-size:14px;"
+                value="{% for t in child.medical_tags %}{{ t }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+            <button type="button" class="btn-add" onclick="saveHealthTags()">保存标签</button>
+            <span id="healthTagsStatus" style="margin-left: 10px; font-size: 13px; color: #666;"></span>
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{% url 'parent_switch_child' %}" id="switchChildForm">
+    {% csrf_token %}
+    <input type="hidden" name="child_id" value="{{ child.id }}" id="selectedChildId">
+</form>
+
+{{ children_class_map|json_script:"children-class-data" }}
+
+<div id="toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 8px; display: none; z-index: 3000;"></div>
+
+<script>
+let childrenClassMap = {};
+
+function switchChild(childId) {
+    document.getElementById('selectedChildId').value = childId;
+    document.getElementById('switchChildForm').submit();
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function refreshClassSummary() {
+    const el = document.getElementById('classEnrollmentSummary');
+    const sel = document.getElementById('childSelect');
+    if (!el || !sel) return;
+    const cid = sel.value;
+    if (!cid) { el.textContent = '请先选择孩子。'; return; }
+    const rows = childrenClassMap[cid] || [];
+    if (!rows.length) { el.innerHTML = '<strong>当前：</strong>未进班'; return; }
+    const parts = rows.map(r => escapeHtml(r.school) + ' · ' + escapeHtml(r.class_name) + '（' + escapeHtml(r.teacher_name) + '）');
+    el.innerHTML = '<strong>当前进班：</strong>' + parts.join('；');
+}
+
+function setChildClass() {
+    const childId = document.getElementById('childSelect').value;
+    const teacherId = document.getElementById('teacherSelect').value;
+    if (!childId || !teacherId) { showToast('请选择孩子和要进入的教师/班级'); return; }
+    fetch('/parent/child-class/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'child_id=' + encodeURIComponent(childId) + '&teacher_id=' + encodeURIComponent(teacherId)
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message);
+        if (data.success) {
+            childrenClassMap[childId] = data.enrollments || [];
+            document.getElementById('classStatus').innerHTML = '<span style="color: #4CAF50;">' + escapeHtml(data.message) + '</span>';
+            refreshClassSummary();
+        } else { document.getElementById('classStatus').innerHTML = '<span style="color: #f44336;">' + escapeHtml(data.message || '') + '</span>'; }
+    })
+    .catch(() => showToast('网络错误'));
+}
+
+function leaveAllClasses() {
+    const childId = document.getElementById('childSelect').value;
+    if (!childId) { showToast('请先选择孩子'); return; }
+    if (!confirm('确定让该孩子退出所有已进班级？')) return;
+    fetch('/parent/child-class/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'child_id=' + encodeURIComponent(childId) + '&teacher_id='
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message);
+        if (data.success) { childrenClassMap[childId] = []; document.getElementById('classStatus').innerHTML = '<span style="color: #4CAF50;">' + escapeHtml(data.message) + '</span>'; refreshClassSummary(); }
+    })
+    .catch(() => showToast('网络错误'));
+}
+
+function bindChild() {
+    const bindCode = document.getElementById('bindCodeInput').value.trim().toUpperCase();
+    if (!bindCode) { showToast('请输入绑定码'); return; }
+    if (bindCode.length !== 6) { showToast('绑定码必须是6位'); return; }
+    fetch('/parent/bind-child/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'bind_code=' + encodeURIComponent(bindCode)
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message);
+        if (data.success) {
+            document.getElementById('bindStatus').innerHTML = '<span style="color: #4CAF50;">绑定成功！</span>';
+            document.getElementById('bindCodeInput').value = '';
+            setTimeout(() => location.reload(), 1200);
+        } else { document.getElementById('bindStatus').innerHTML = '<span style="color: #f44336;">' + escapeHtml(data.message) + '</span>'; }
+    });
+}
+
+function loadTeachers() {
+    fetch('/parent/get-teachers/')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.teachers.length > 0) {
+            let html = '<option value="">选择教师/班级</option>';
+            data.teachers.forEach(t => { html += '<option value="' + t.id + '">' + escapeHtml(t.name) + ' - ' + escapeHtml(t.school) + ' - ' + escapeHtml(t.class_name) + '</option>'; });
+            document.getElementById('teacherSelect').innerHTML = html;
+        }
+    });
+}
+
+function saveBirthDate() {
+    const v = document.getElementById('birthDateInput').value;
+    const st = document.getElementById('birthDateStatus');
+    fetch('/parent/child-birth-date/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'birth_date=' + encodeURIComponent(v)
+    })
+    .then(r => r.json())
+    .then(data => {
+        st.textContent = data.message || (data.success ? '已保存' : '失败');
+        st.style.color = data.success ? '#2e7d32' : '#c62828';
+        showToast(data.message);
+        setTimeout(() => { st.textContent = ''; }, 3500);
+    })
+    .catch(() => { st.textContent = '网络错误'; st.style.color = '#c62828'; });
+}
+
+function clearBirthDate() { document.getElementById('birthDateInput').value = ''; saveBirthDate(); }
+
+function saveDietNotes() {
+    const notes = document.getElementById('dietNotesInput').value;
+    const st = document.getElementById('dietNotesStatus');
+    fetch('/parent/child-diet-notes/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'diet_notes=' + encodeURIComponent(notes)
+    })
+    .then(r => r.json())
+    .then(data => {
+        st.textContent = data.success ? '已保存' : (data.message || '失败');
+        st.style.color = data.success ? '#2e7d32' : '#c62828';
+        setTimeout(() => { st.textContent = ''; }, 2500);
+    })
+    .catch(() => { st.textContent = '网络错误'; st.style.color = '#c62828'; });
+}
+
+function splitTagsInput(raw) { return (raw || '').split(/[,，\n\r]+/).map(s => s.trim()).filter(Boolean).slice(0, 30); }
+
+function saveHealthTags() {
+    const st = document.getElementById('healthTagsStatus');
+    const allergy = splitTagsInput(document.getElementById('allergyTagsInput').value);
+    const medical = splitTagsInput(document.getElementById('medicalTagsInput').value);
+    const body = 'allergy_tags=' + encodeURIComponent(JSON.stringify(allergy)) + '&medical_tags=' + encodeURIComponent(JSON.stringify(medical));
+    fetch('/parent/child-health-tags/', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/x-www-form-urlencoded'},
+        body
+    })
+    .then(r => r.json())
+    .then(data => {
+        st.textContent = data.success ? '已保存' : (data.message || '失败');
+        st.style.color = data.success ? '#2e7d32' : '#c62828';
+        setTimeout(() => { st.textContent = ''; }, 2500);
+    })
+    .catch(() => { st.textContent = '网络错误'; st.style.color = '#c62828'; });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const el = document.getElementById('children-class-data');
+    if (el) { try { childrenClassMap = JSON.parse(el.textContent); } catch (e) { childrenClassMap = {}; } }
+    const cs = document.getElementById('childSelect');
+    if (cs) cs.addEventListener('change', refreshClassSummary);
+    const bd = document.getElementById('birthDateInput');
+    if (bd) bd.setAttribute('max', new Date().toISOString().slice(0, 10));
+    loadTeachers();
+    refreshClassSummary();
+});
+</script>
+{% endblock %}
